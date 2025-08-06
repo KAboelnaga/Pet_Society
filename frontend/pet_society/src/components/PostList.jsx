@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api from './api';
-import PostCard from './components/PostCard';
+import api from '../api';
+import PostCard from './PostCard';
 import './App.css';
 
 /**
