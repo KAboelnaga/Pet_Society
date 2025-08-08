@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PostList from '../components/PostList';
 import Sidebar from '../components/Sidebar';
-import './App.css';
+import '../App.css';
 
 /**
  * HomePage component
