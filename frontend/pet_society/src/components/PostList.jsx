@@ -22,11 +22,22 @@ const PostList = ({ selectedCategory }) => {
     }
     api.get(url)
       .then(res => {
-        setPosts(res.data.results);
-        setHasNext(!!res.data.next);
+        // Handle both paginated and non-paginated responses
+        const data = res.data;
+        if (data.results) {
+          // Paginated response
+          setPosts(data.results);
+          setHasNext(!!data.next);
+        } else {
+          // Non-paginated response (fallback)
+          setPosts(data);
+          setHasNext(false);
+        }
       })
       .catch(err => {
+        console.error('Error fetching posts:', err);
         setPosts([]);
+        setHasNext(false);
       })
       .finally(() => setLoading(false));
   }, [selectedCategory, page]);

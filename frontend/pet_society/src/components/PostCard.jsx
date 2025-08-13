@@ -12,7 +12,7 @@ const PostCard = ({ post }) => {
 
   return (
     <div className="post-card">
-      <a href={`/posts/${post.id}`} className="post-image-link">
+      <a href={`/posts/${post.id}`} className="post-image-link" title="Click to view full post">
         {post.image ? (
           <img src={post.image} alt={post.title} className="post-image" />
         ) : (

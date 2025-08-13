@@ -13,10 +13,30 @@ const Sidebar = ({ selectedCategory, setSelectedCategory }) => {
 
   useEffect(() => {
     api.get('categories/')
-      .then(res => setCategories(res.data))
-      .catch(() => setCategories([]))
+      .then(res => {
+        // Handle both paginated and non-paginated responses
+        const data = res.data;
+        if (data.results) {
+          setCategories(data.results);
+        } else {
+          setCategories(data);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching categories:', err);
+        setCategories([]);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return (
+      <div className="sidebar">
+        <h2>Categories</h2>
+        <div className="loading">Loading categories...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="sidebar">

@@ -9,9 +9,11 @@ body, html, #root {
 
 .homepage-container {
   display: flex;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 32px 0;
+  padding: 32px 20px;
+  justify-content: center;
+  gap: 40px;
 }
 
 .sidebar {
@@ -19,9 +21,10 @@ body, html, #root {
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  margin-right: 32px;
   padding: 24px 16px;
   height: fit-content;
+  flex-shrink: 0;
+  color: #222;
 }
 
 .sidebar h2 {
@@ -42,22 +45,29 @@ body, html, #root {
   cursor: pointer;
   margin-bottom: 6px;
   transition: background 0.2s;
+  color: #333;
+  font-weight: 500;
 }
 
 .category-list li.active, .category-list li:hover {
   background: #e0e0e0;
   font-weight: 600;
+  color: #000;
 }
 
 .feed-container {
   flex: 1;
   min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .post-list {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  width: 100%;
+  max-width: 600px;
 }
 
 .post-card {
@@ -67,8 +77,7 @@ body, html, #root {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-width: 600px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .post-image-link {
@@ -77,6 +86,12 @@ body, html, #root {
   height: 340px;
   background: #f0f0f0;
   overflow: hidden;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.post-image-link:hover {
+  opacity: 0.9;
 }
 
 .post-image {
@@ -84,6 +99,11 @@ body, html, #root {
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.2s ease;
+}
+
+.post-image-link:hover .post-image {
+  transform: scale(1.02);
 }
 
 .post-image-placeholder {
@@ -95,6 +115,26 @@ body, html, #root {
   color: #aaa;
   font-size: 1.2rem;
   background: #f0f0f0;
+  position: relative;
+}
+
+.post-image-placeholder::after {
+  content: "Click to view post";
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.post-image-link:hover .post-image-placeholder::after {
+  opacity: 1;
 }
 
 .post-info {
@@ -105,6 +145,7 @@ body, html, #root {
   margin: 0 0 8px 0;
   font-size: 1.3rem;
   font-weight: 700;
+  color: #222;
 }
 
 .post-meta {
@@ -126,6 +167,10 @@ body, html, #root {
   text-align: center;
   color: #888;
   margin: 40px 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 1.1rem;
 }
 
 .pagination {
@@ -150,4 +195,26 @@ body, html, #root {
 .pagination button:disabled {
   background: #b2dffc;
   cursor: not-allowed;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .homepage-container {
+    flex-direction: column;
+    padding: 16px;
+    gap: 24px;
+  }
+  
+  .sidebar {
+    width: 100%;
+    order: 2;
+  }
+  
+  .feed-container {
+    order: 1;
+  }
+  
+  .post-list {
+    max-width: 100%;
+  }
 }
