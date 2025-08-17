@@ -1,54 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  AppBar,
-  Toolbar,
-  Typography,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Chip,
-  TextField,
-  InputAdornment,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  Snackbar,
-  Avatar,
-  Card,
-  CardContent,
-  Grid,
-  useTheme as useMuiTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
-  ArrowBack,
-} from '@mui/icons-material';
+import { 
+  Container, 
+  Row, 
+  Col, 
+  Card, 
+  Button, 
+  Table, 
+  Form, 
+  InputGroup, 
+  Alert, 
+  Badge,
+  Spinner,
+  Modal,
+  Image
+} from 'react-bootstrap';
+import { BsSearch, BsTrash, BsEye, BsArrowLeft, BsFileImage } from 'react-icons/bs';
 import { useTheme } from '../contexts/ThemeContext';
+import Layout from '../components/Layout';
 import axios from 'axios';
 
 const PostsPage = () => {
   const navigate = useNavigate();
-  const muiTheme = useMuiTheme();
-  const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
   const { theme } = useTheme();
   const [posts, setPosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPost, setSelectedPost] = useState(null);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' });
 
   useEffect(() => {
     fetchPosts();
@@ -56,19 +36,25 @@ const PostsPage = () => {
 
   const fetchPosts = async () => {
     try {
+      setLoading(true);
       const response = await axios.get('/admin/posts/');
       setPosts(response.data);
     } catch (error) {
-      showSnackbar('Error fetching posts', 'error');
+      showAlert('Error fetching posts', 'danger');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSearch = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`/admin/posts/?search=${searchTerm}`);
       setPosts(response.data);
     } catch (error) {
-      showSnackbar('Error searching posts', 'error');
+      showAlert('Error searching posts', 'danger');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,9 +62,9 @@ const PostsPage = () => {
     try {
       const response = await axios.get(`/admin/posts/${postId}/`);
       setSelectedPost(response.data);
-      setViewDialogOpen(true);
+      setShowViewModal(true);
     } catch (error) {
-      showSnackbar('Error fetching post details', 'error');
+      showAlert('Error fetching post details', 'danger');
     }
   };
 
@@ -86,330 +72,296 @@ const PostsPage = () => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
         await axios.delete(`/admin/posts/${postId}/delete/`);
-        showSnackbar('Post deleted successfully');
+        showAlert('Post deleted successfully');
         fetchPosts();
       } catch (error) {
-        showSnackbar('Error deleting post', 'error');
+        showAlert('Error deleting post', 'danger');
       }
     }
   };
 
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
+  const showAlert = (message, variant = 'success') => {
+    setAlert({ show: true, message, variant });
+    setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000);
   };
 
   const getPostTypeColor = (type) => {
-    switch (type) {
-      case 'adoption':
-        return 'success';
-      case 'sale':
+    switch (type?.toLowerCase()) {
+      case 'dog':
         return 'primary';
-      case 'mating':
+      case 'cat':
+        return 'info';
+      case 'bird':
         return 'warning';
+      case 'fish':
+        return 'success';
       default:
-        return 'default';
+        return 'secondary';
     }
   };
 
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
-      <AppBar position="static" elevation={0}>
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2, md: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton
-              edge="start"
-              color="inherit"
-              onClick={() => navigate('/')}
-              sx={{ mr: { xs: 1, sm: 2 } }}
-            >
-              <ArrowBack />
-            </IconButton>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
-              Posts Management
-            </Typography>
-          </Box>
-        </Toolbar>
-      </AppBar>
+    <Layout title="Posts Management">
+      <Container fluid className="p-4">
+        {/* Header */}
+        <Row className="mb-4">
+          <Col>
+            <div className="d-flex align-items-center mb-3">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => navigate('/')}
+                className="me-3"
+              >
+                <BsArrowLeft className="me-1" />
+                Back to Dashboard
+              </Button>
+              <h2 className="mb-0 fw-bold" style={{ color: theme.colors.text }}>
+                Posts Management
+              </h2>
+            </div>
+            <p className="text-muted mb-0">
+              Manage animal posts and listings
+            </p>
+          </Col>
+        </Row>
 
-      <Box sx={{ px: { xs: 1, sm: 2, md: 3, lg: 4 }, py: { xs: 2, sm: 3, md: 4 } }}>
+        {/* Alert */}
+        {alert.show && (
+          <Alert 
+            variant={alert.variant} 
+            dismissible 
+            onClose={() => setAlert({ show: false, message: '', variant: 'success' })}
+            className="mb-4"
+          >
+            {alert.message}
+          </Alert>
+        )}
+
         {/* Search Bar */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: { xs: 2, sm: 3 }, 
-            mb: { xs: 2, sm: 3 }, 
-            borderRadius: 3,
-            background: theme.palette.background.search,
-          }}
-        >
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search posts by title, user, or category..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-              },
-            }}
-          />
-        </Paper>
+        <Card className="mb-4 border-0 shadow-sm">
+          <Card.Body>
+            <Row>
+              <Col md={6}>
+                <InputGroup>
+                  <Form.Control
+                    type="text"
+                    placeholder="Search posts by title, description, or animal type..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                  <Button 
+                    variant="primary" 
+                    onClick={handleSearch}
+                    disabled={loading}
+                  >
+                    <BsSearch />
+                  </Button>
+                </InputGroup>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
 
         {/* Posts Table */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            width: '100%', 
-            overflow: 'hidden',
-            borderRadius: 3,
-          }}
-        >
-          <TableContainer>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Title</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>User</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Category</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Type</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Price</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Location</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Created</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredPosts.map((post) => (
-                  <TableRow key={post.id} hover>
-                    <TableCell>
-                      <Typography variant="body1" sx={{ fontWeight: 'bold', color: theme.palette.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                        {post.title}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}>
-                        {post.user}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}>
-                        {post.category}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={post.post_type}
-                        color={getPostTypeColor(post.post_type)}
-                        size="small"
-                        sx={{ fontWeight: 'bold', fontSize: { xs: '0.625rem', sm: '0.75rem' } }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: theme.palette.text.primary, fontSize: { xs: '0.625rem', sm: '0.75rem' } }}>
-                        {post.price ? `$${post.price}` : '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}>
-                        {post.location}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={post.is_active ? 'Active' : 'Inactive'}
-                        color={post.is_active ? 'success' : 'default'}
-                        size="small"
-                        sx={{ fontWeight: 'bold', fontSize: { xs: '0.625rem', sm: '0.75rem' } }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}>
-                        {new Date(post.created_at).toLocaleDateString()}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box display="flex" gap={1} justifyContent="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewPost(post.id)}
-                          color="primary"
-                          title="View Details"
-                          sx={{
-                            '&:hover': {
-                              backgroundColor: 'primary.light',
-                              color: 'white',
-                            },
-                          }}
-                        >
-                          <ViewIcon sx={{ fontSize: { xs: 16, sm: 20 } }} />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeletePost(post.id)}
-                          color="error"
-                          title="Delete Post"
-                          sx={{
-                            '&:hover': {
-                              backgroundColor: 'error.light',
-                              color: 'white',
-                            },
-                          }}
-                        >
-                          <DeleteIcon sx={{ fontSize: { xs: 16, sm: 20 } }} />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      </Box>
+        <Card className="border-0 shadow-sm">
+          <Card.Body className="p-0">
+            {loading ? (
+              <div className="text-center p-5">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-2 text-muted">Loading posts...</p>
+              </div>
+            ) : (
+              <Table responsive className="mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Post</th>
+                    <th>Animal Type</th>
+                    <th>Owner</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {posts.map((post) => (
+                    <tr key={post.id}>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <div className="me-3">
+                            {post.image ? (
+                              <Image 
+                                src={post.image} 
+                                alt={post.title}
+                                width={50}
+                                height={50}
+                                className="rounded"
+                                style={{ objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <div 
+                                className="d-flex align-items-center justify-content-center rounded"
+                                style={{
+                                  width: '50px',
+                                  height: '50px',
+                                  backgroundColor: '#f8f9fa',
+                                  color: '#6c757d'
+                                }}
+                              >
+                                <BsFileImage size={24} />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <strong>{post.title}</strong>
+                            <br />
+                            <small className="text-muted">
+                              {post.description?.substring(0, 50)}
+                              {post.description?.length > 50 && '...'}
+                            </small>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <Badge bg={getPostTypeColor(post.animal_type)}>
+                          {post.animal_type}
+                        </Badge>
+                      </td>
+                      <td>
+                        <div>
+                          <strong>{post.owner?.username}</strong>
+                          <br />
+                          <small className="text-muted">{post.owner?.email}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <Badge bg={post.is_active ? 'success' : 'secondary'}>
+                          {post.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </td>
+                      <td>
+                        <small className="text-muted">
+                          {formatDate(post.created_at)}
+                        </small>
+                      </td>
+                      <td>
+                        <div className="d-flex gap-2">
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={() => handleViewPost(post.id)}
+                            title="View Post"
+                          >
+                            <BsEye />
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => handleDeletePost(post.id)}
+                            title="Delete Post"
+                          >
+                            <BsTrash />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+          </Card.Body>
+        </Card>
 
-      {/* View Post Dialog */}
-      <Dialog
-        open={viewDialogOpen}
-        onClose={() => setViewDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3 }
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 'bold', color: theme.palette.text.primary, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-          Post Details
-        </DialogTitle>
-        <DialogContent>
-          {selectedPost && (
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: theme.palette.text.primary, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                  {selectedPost.title}
-                </Typography>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                      User Information
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      <strong>Username:</strong> {selectedPost.user?.username}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      <strong>Email:</strong> {selectedPost.user?.email}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                      Post Information
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      <strong>Category:</strong> {selectedPost.category?.name}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      <strong>Type:</strong> {selectedPost.post_type}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      <strong>Price:</strong> {selectedPost.price ? `$${selectedPost.price}` : 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      <strong>Location:</strong> {selectedPost.location}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid item xs={12}>
-                <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                      Description
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      {selectedPost.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid item xs={12}>
-                <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                      Contact Information
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      {selectedPost.contact_info}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button 
-            onClick={() => setViewDialogOpen(false)}
-            variant="contained"
-            sx={{ 
-              borderRadius: 2,
-              background: theme.palette.mode === 'light'
-                ? 'linear-gradient(135deg, #1976d2, #42a5f5)'
-                : 'linear-gradient(135deg, #90caf9, #42a5f5)',
-              '&:hover': {
-                background: theme.palette.mode === 'light'
-                  ? 'linear-gradient(135deg, #1565c0, #1976d2)'
-                  : 'linear-gradient(135deg, #42a5f5, #1976d2)',
-              },
-            }}
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
+        {/* View Post Modal */}
+        <Modal 
+          show={showViewModal} 
+          onHide={() => setShowViewModal(false)} 
+          size="lg"
+          centered
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <Modal.Header closeButton>
+            <Modal.Title>Post Details</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {selectedPost && (
+              <div>
+                <Row>
+                  <Col md={6}>
+                    {selectedPost.image ? (
+                      <Image 
+                        src={selectedPost.image} 
+                        alt={selectedPost.title}
+                        fluid
+                        className="rounded mb-3"
+                      />
+                    ) : (
+                      <div 
+                        className="d-flex align-items-center justify-content-center rounded mb-3"
+                        style={{
+                          height: '200px',
+                          backgroundColor: '#f8f9fa',
+                          color: '#6c757d'
+                        }}
+                      >
+                        <BsFileImage size={48} />
+                      </div>
+                    )}
+                  </Col>
+                  <Col md={6}>
+                    <h5>{selectedPost.title}</h5>
+                    <p className="text-muted">{selectedPost.description}</p>
+                    
+                    <div className="mb-3">
+                      <strong>Animal Type:</strong>
+                      <Badge bg={getPostTypeColor(selectedPost.animal_type)} className="ms-2">
+                        {selectedPost.animal_type}
+                      </Badge>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <strong>Owner:</strong> {selectedPost.owner?.username}
+                    </div>
+                    
+                    <div className="mb-3">
+                      <strong>Status:</strong>
+                      <Badge bg={selectedPost.is_active ? 'success' : 'secondary'} className="ms-2">
+                        {selectedPost.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <strong>Created:</strong> {formatDate(selectedPost.created_at)}
+                    </div>
+                    
+                    {selectedPost.updated_at && (
+                      <div>
+                        <strong>Updated:</strong> {formatDate(selectedPost.updated_at)}
+                      </div>
+                    )}
+                  </Col>
+                </Row>
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowViewModal(false)}>
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </Container>
+    </Layout>
   );
 };
 

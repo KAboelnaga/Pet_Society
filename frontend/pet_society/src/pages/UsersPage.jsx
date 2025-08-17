@@ -1,49 +1,36 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  AppBar,
-  Toolbar,
-  Typography,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Chip,
-  TextField,
-  InputAdornment,
-  Switch,
-  FormControlLabel,
-  Alert,
-  Snackbar,
-  Avatar,
-  useTheme as useMuiTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Block as BlockIcon,
-  AdminPanelSettings as AdminIcon,
-  ArrowBack,
-} from '@mui/icons-material';
+import { 
+  Container, 
+  Row, 
+  Col, 
+  Card, 
+  Button, 
+  Table, 
+  Form, 
+  InputGroup, 
+  Alert, 
+  Badge,
+  Spinner,
+  Modal
+} from 'react-bootstrap';
+import { BsSearch, BsShieldX, BsShieldCheck, BsArrowLeft, BsPersonCircle } from 'react-icons/bs';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import Layout from '../components/Layout';
 import axios from 'axios';
 
 const UsersPage = () => {
   const navigate = useNavigate();
-  const muiTheme = useMuiTheme();
-  const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
   const { user: currentUser } = useAuth();
   const { theme } = useTheme();
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' });
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [actionUser, setActionUser] = useState(null);
+  const [actionType, setActionType] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -51,19 +38,25 @@ const UsersPage = () => {
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       const response = await axios.get('/admin/users/');
       setUsers(response.data);
     } catch (error) {
-      showSnackbar('Error fetching users', 'error');
+      showAlert('Error fetching users', 'danger');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSearch = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`/admin/users/?search=${searchTerm}`);
       setUsers(response.data);
     } catch (error) {
-      showSnackbar('Error searching users', 'error');
+      showAlert('Error searching users', 'danger');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,10 +65,10 @@ const UsersPage = () => {
       await axios.patch(`/admin/users/${userId}/update/`, {
         is_blocked: !currentBlockedStatus,
       });
-      showSnackbar(`User ${currentBlockedStatus ? 'unblocked' : 'blocked'} successfully`);
+      showAlert(`User ${currentBlockedStatus ? 'unblocked' : 'blocked'} successfully`);
       fetchUsers();
     } catch (error) {
-      showSnackbar(error.response?.data?.error || 'Error updating user', 'error');
+      showAlert(error.response?.data?.error || 'Error updating user', 'danger');
     }
   };
 
@@ -84,232 +77,226 @@ const UsersPage = () => {
       await axios.patch(`/admin/users/${userId}/update/`, {
         is_admin: !currentAdminStatus,
       });
-      showSnackbar(`User ${currentAdminStatus ? 'demoted' : 'promoted'} successfully`);
+      showAlert(`User ${currentAdminStatus ? 'demoted' : 'promoted'} successfully`);
       fetchUsers();
     } catch (error) {
-      showSnackbar(error.response?.data?.error || 'Error updating user', 'error');
+      showAlert(error.response?.data?.error || 'Error updating user', 'danger');
     }
   };
 
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
+  const showAlert = (message, variant = 'success') => {
+    setAlert({ show: true, message, variant });
+    setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000);
   };
 
   const canModifyUser = (user) => {
-    // Superuser can modify anyone
-    if (currentUser?.is_superuser) return true;
-    
-    // Regular admin can't modify other admins or superusers
-    if (user.is_admin || user.is_superuser) return false;
-    
-    // Regular admin can modify regular users
-    return true;
+    // Super admin can modify anyone except themselves
+    if (currentUser?.is_superuser) {
+      return user.id !== currentUser.id;
+    }
+    // Regular admin can only modify non-admin users
+    return !user.is_admin && !user.is_superuser;
   };
 
-  const filteredUsers = users.filter(user => 
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleActionClick = (user, type) => {
+    setActionUser(user);
+    setActionType(type);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmAction = () => {
+    if (!actionUser) return;
+
+    if (actionType === 'block') {
+      handleToggleBlock(actionUser.id, actionUser.is_blocked);
+    } else if (actionType === 'admin') {
+      handleToggleAdmin(actionUser.id, actionUser.is_admin);
+    }
+
+    setShowConfirmModal(false);
+    setActionUser(null);
+    setActionType('');
+  };
+
+  const getActionText = () => {
+    if (!actionUser || !actionType) return '';
+    
+    if (actionType === 'block') {
+      return actionUser.is_blocked ? 'unblock' : 'block';
+    } else if (actionType === 'admin') {
+      return actionUser.is_admin ? 'remove admin privileges from' : 'promote to admin';
+    }
+    return '';
+  };
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
-      <AppBar position="static" elevation={0}>
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2, md: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton
-              edge="start"
-              color="inherit"
-              onClick={() => navigate('/')}
-              sx={{ mr: { xs: 1, sm: 2 } }}
-            >
-              <ArrowBack />
-            </IconButton>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
-              Users Management
-            </Typography>
-          </Box>
-        </Toolbar>
-      </AppBar>
+    <Layout title="Users Management">
+      <Container fluid className="p-4">
+        {/* Header */}
+        <Row className="mb-4">
+          <Col>
+            <div className="d-flex align-items-center mb-3">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => navigate('/')}
+                className="me-3"
+              >
+                <BsArrowLeft className="me-1" />
+                Back to Dashboard
+              </Button>
+              <h2 className="mb-0 fw-bold" style={{ color: theme.colors.text }}>
+                Users Management
+              </h2>
+            </div>
+            <p className="text-muted mb-0">
+              Manage user accounts and permissions
+            </p>
+          </Col>
+        </Row>
 
-      <Box sx={{ px: { xs: 1, sm: 2, md: 3, lg: 4 }, py: { xs: 2, sm: 3, md: 4 } }}>
+        {/* Alert */}
+        {alert.show && (
+          <Alert 
+            variant={alert.variant} 
+            dismissible 
+            onClose={() => setAlert({ show: false, message: '', variant: 'success' })}
+            className="mb-4"
+          >
+            {alert.message}
+          </Alert>
+        )}
+
         {/* Search Bar */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: { xs: 2, sm: 3 }, 
-            mb: { xs: 2, sm: 3 }, 
-            borderRadius: 3,
-            background: theme.palette.background.search,
-          }}
-        >
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search users by name, email, or username..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-              },
-            }}
-          />
-        </Paper>
+        <Card className="mb-4 border-0 shadow-sm">
+          <Card.Body>
+            <Row>
+              <Col md={6}>
+                <InputGroup>
+                  <Form.Control
+                    type="text"
+                    placeholder="Search users by username or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                  <Button 
+                    variant="primary" 
+                    onClick={handleSearch}
+                    disabled={loading}
+                  >
+                    <BsSearch />
+                  </Button>
+                </InputGroup>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
 
         {/* Users Table */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            width: '100%', 
-            overflow: 'hidden',
-            borderRadius: 3,
-          }}
-        >
-          <TableContainer>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>User</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Email</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Role</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Posts</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Joined</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id} hover>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        <Avatar 
-                          sx={{ 
-                            mr: 2, 
-                            width: { xs: 32, sm: 40 }, 
-                            height: { xs: 32, sm: 40 },
-                            bgcolor: user.is_admin ? 'primary.main' : 'grey.500',
-                          }}
-                        >
-                          {user.username.charAt(0).toUpperCase()}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body1" sx={{ fontWeight: 'bold', color: theme.palette.text.primary, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                            {user.username}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}>
-                            {user.first_name} {user.last_name}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}>
-                        {user.email}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {user.is_superuser ? (
-                        <Chip label="Super Admin" color="error" size="small" sx={{ fontWeight: 'bold', fontSize: { xs: '0.625rem', sm: '0.75rem' } }} />
-                      ) : user.is_admin ? (
-                        <Chip label="Admin" color="primary" size="small" sx={{ fontWeight: 'bold', fontSize: { xs: '0.625rem', sm: '0.75rem' } }} />
-                      ) : (
-                        <Chip label="User" color="default" size="small" sx={{ fontWeight: 'bold', fontSize: { xs: '0.625rem', sm: '0.75rem' } }} />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.is_blocked ? 'Blocked' : 'Active'}
-                        color={user.is_blocked ? 'error' : 'success'}
-                        size="small"
-                        sx={{ fontWeight: 'bold', fontSize: { xs: '0.625rem', sm: '0.75rem' } }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: theme.palette.text.primary, fontSize: { xs: '0.625rem', sm: '0.75rem' } }}>
-                        {user.posts_count}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' } }}>
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box display="flex" gap={1} justifyContent="center">
-                        {/* Block/Unblock */}
-                        {canModifyUser(user) && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleToggleBlock(user.id, user.is_blocked)}
-                            color={user.is_blocked ? 'success' : 'error'}
-                            title={user.is_blocked ? 'Unblock User' : 'Block User'}
-                            sx={{
-                              '&:hover': {
-                                backgroundColor: user.is_blocked ? 'success.light' : 'error.light',
-                                color: 'white',
-                              },
-                            }}
-                          >
-                            <BlockIcon sx={{ fontSize: { xs: 16, sm: 20 } }} />
-                          </IconButton>
+        <Card className="border-0 shadow-sm">
+          <Card.Body className="p-0">
+            {loading ? (
+              <div className="text-center p-5">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-2 text-muted">Loading users...</p>
+              </div>
+            ) : (
+              <Table responsive className="mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <div className="me-3">
+                            <BsPersonCircle size={32} className="text-muted" />
+                          </div>
+                          <div>
+                            <strong>{user.username}</strong>
+                            <br />
+                            <small className="text-muted">
+                              Joined {new Date(user.date_joined).toLocaleDateString()}
+                            </small>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{user.email}</td>
+                      <td>
+                        {user.is_superuser ? (
+                          <Badge bg="danger">Super Admin</Badge>
+                        ) : user.is_admin ? (
+                          <Badge bg="primary">Admin</Badge>
+                        ) : (
+                          <Badge bg="secondary">User</Badge>
                         )}
-                        
-                        {/* Promote/Demote */}
-                        {canModifyUser(user) && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleToggleAdmin(user.id, user.is_admin)}
-                            color={user.is_admin ? 'warning' : 'primary'}
-                            title={user.is_admin ? 'Demote from Admin' : 'Promote to Admin'}
-                            sx={{
-                              '&:hover': {
-                                backgroundColor: user.is_admin ? 'warning.light' : 'primary.light',
-                                color: 'white',
-                              },
-                            }}
-                          >
-                            <AdminIcon sx={{ fontSize: { xs: 16, sm: 20 } }} />
-                          </IconButton>
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      </Box>
+                      </td>
+                      <td>
+                        <Badge bg={user.is_blocked ? 'danger' : 'success'}>
+                          {user.is_blocked ? 'Blocked' : 'Active'}
+                        </Badge>
+                      </td>
+                      <td>
+                        <div className="d-flex gap-2">
+                          {canModifyUser(user) && (
+                            <>
+                              <Button
+                                variant={user.is_blocked ? 'outline-success' : 'outline-danger'}
+                                size="sm"
+                                onClick={() => handleActionClick(user, 'block')}
+                                title={user.is_blocked ? 'Unblock User' : 'Block User'}
+                              >
+                                {user.is_blocked ? <BsShieldCheck /> : <BsShieldX />}
+                              </Button>
+                              {currentUser?.is_superuser && (
+                                <Button
+                                  variant={user.is_admin ? 'outline-warning' : 'outline-primary'}
+                                  size="sm"
+                                  onClick={() => handleActionClick(user, 'admin')}
+                                  title={user.is_admin ? 'Remove Admin' : 'Make Admin'}
+                                >
+                                  <BsShieldCheck />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+          </Card.Body>
+        </Card>
 
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+        {/* Confirmation Modal */}
+        <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Confirm Action</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Are you sure you want to {getActionText()} <strong>{actionUser?.username}</strong>?
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowConfirmModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleConfirmAction}>
+              Confirm
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </Container>
+    </Layout>
   );
 };
 

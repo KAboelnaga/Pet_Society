@@ -1,71 +1,54 @@
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Spinner } from 'react-bootstrap';
 import { useTheme } from '../contexts/ThemeContext';
 
 const LoadingScreen = () => {
   const { theme } = useTheme();
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        width: '100vw',
-        background: theme.palette.background.gradient,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 3,
+    <div
+      className="min-vh-100 d-flex flex-column align-items-center justify-content-center"
+      style={{
+        background: theme.gradients.background,
+        gap: '1.5rem',
       }}
     >
-      <Box
-        sx={{
+      <div
+        className="d-flex align-items-center justify-content-center rounded-circle"
+        style={{
           backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '50%',
-          width: 80,
-          height: 80,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          width: '80px',
+          height: '80px',
           backdropFilter: 'blur(10px)',
         }}
       >
-        <Typography sx={{ fontSize: 40 }}>
+        <span style={{ fontSize: '40px' }}>
           🐾
-        </Typography>
-      </Box>
+        </span>
+      </div>
       
-      <CircularProgress 
-        size={60} 
-        thickness={4}
-        sx={{ 
-          color: 'white',
-          '& .MuiCircularProgress-circle': {
-            strokeLinecap: 'round',
-          },
+      <Spinner 
+        animation="border" 
+        variant="light"
+        style={{ 
+          width: '60px', 
+          height: '60px',
+          borderWidth: '4px',
         }}
       />
       
-      <Typography 
-        variant="h6" 
-        sx={{ 
-          color: 'white', 
-          fontWeight: 'bold',
-          textAlign: 'center',
-        }}
+      <h5 
+        className="text-white fw-bold text-center mb-0"
       >
         Loading Pet Society...
-      </Typography>
+      </h5>
       
-      <Typography 
-        variant="body2" 
-        sx={{ 
-          color: 'rgba(255, 255, 255, 0.8)',
-          textAlign: 'center',
-        }}
+      <p 
+        className="text-white-50 text-center mb-0"
+        style={{ opacity: 0.8 }}
       >
         Please wait while we check your session
-      </Typography>
-    </Box>
+      </p>
+    </div>
   );
 };
 

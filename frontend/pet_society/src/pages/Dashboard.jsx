@@ -1,42 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box, // This is like a <div>
-  AppBar, // This is like a <header> with navigation
-  Toolbar, // This is like a <nav> inside the header
-  Typography, // This is like <h1>, <h2>, <p> etc.
-  Button, // This is like a <button>
-  Grid, // This is like Bootstrap's row/col system
-  Card, // This is like a <div> with background and shadow
-  CardContent, // This is like the content inside the card
-  IconButton, // This is like a <button> with an icon
-  Menu, // This is like a dropdown menu
-  MenuItem, // This is like <option> in the dropdown
-  Avatar, // This is like a circular image
-  Chip, // This is like a small colored badge
-  Divider, // This is like a <hr> line
-} from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  Category as CategoryIcon,
-  People as PeopleIcon,
-  Article as ArticleIcon,
-  AccountCircle,
-  Logout,
-  TrendingUp,
-  LightMode,
-  DarkMode,
-} from '@mui/icons-material';
+import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
+import { 
+  BsPeople, 
+  BsFileText, 
+  BsCollection, 
+  BsGraphUp,
+  BsArrowRight
+} from 'react-icons/bs';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import Layout from '../components/Layout';
 import axios from 'axios';
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
-  const { mode, toggleTheme, theme } = useTheme();
+  const { user } = useAuth();
+  const { theme, mode } = useTheme();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
-  const [anchorEl, setAnchorEl] = useState(null);
 
   useEffect(() => {
     fetchStats();
@@ -51,320 +32,242 @@ const Dashboard = () => {
     }
   };
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
-  // Statistics Card Component (like a div with stats)
+  // Statistics Card Component
   const StatCard = ({ title, value, icon, color, subtitle }) => (
     <Card 
-      sx={{ 
-        height: '100%',
+      className="h-100 border-0 shadow-sm"
+      style={{
         background: `linear-gradient(135deg, ${color}15, ${color}25)`,
         border: `1px solid ${color}30`,
         transition: 'all 0.3s ease',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: `0 8px 25px ${color}40`,
-        }
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = `0 8px 25px ${color}40`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
       }}
     >
-      <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
+      <Card.Body className="text-center p-4">
         {/* Icon Circle */}
-        <Box
-          sx={{
+        <div
+          className="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-3"
+          style={{
             backgroundColor: color,
-            borderRadius: '50%',
-            width: { xs: 50, sm: 60 },
-            height: { xs: 50, sm: 60 },
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px',
+            width: '60px',
+            height: '60px',
             boxShadow: `0 4px 12px ${color}40`,
           }}
         >
           {icon}
-        </Box>
+        </div>
         
         {/* Value Number */}
-        <Typography variant="h4" component="div" sx={{ fontWeight: 'bold', mb: 1, color: theme.palette.text.primary, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}>
+        <h3 className="fw-bold mb-2" style={{ color: theme.colors.text }}>
           {value}
-        </Typography>
+        </h3>
         
         {/* Title */}
-        <Typography color="textSecondary" gutterBottom variant="h6" sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}>
+        <h6 className="text-muted mb-1">
           {title}
-        </Typography>
+        </h6>
         
         {/* Subtitle */}
         {subtitle && (
-          <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+          <small className="text-muted">
             {subtitle}
-          </Typography>
+          </small>
         )}
-      </CardContent>
+      </Card.Body>
     </Card>
   );
 
-  // Navigation Card Component (like a clickable div)
-  const NavigationCard = ({ title, icon, onClick, color = 'primary.main' }) => (
+  // Navigation Card Component
+  const NavigationCard = ({ title, icon, onClick, color = theme.colors.primary }) => (
     <Card
-      sx={{
-        height: { xs: 120, sm: 140 },
+      className="h-100 border-0 shadow-sm cursor-pointer"
+      style={{
         cursor: 'pointer',
         background: `linear-gradient(135deg, ${color}08, ${color}15)`,
         border: `1px solid ${color}20`,
         transition: 'all 0.3s ease',
-        '&:hover': {
-          transform: 'translateY(-6px)',
-          boxShadow: `0 12px 30px ${color}30`,
-          background: `linear-gradient(135deg, ${color}15, ${color}25)`,
-        },
+        height: '140px',
       }}
       onClick={onClick}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-6px)';
+        e.currentTarget.style.boxShadow = `0 12px 30px ${color}30`;
+        e.currentTarget.style.background = `linear-gradient(135deg, ${color}15, ${color}25)`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)';
+        e.currentTarget.style.background = `linear-gradient(135deg, ${color}08, ${color}15)`;
+      }}
     >
-      <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
+      <Card.Body className="text-center p-4">
         {/* Icon */}
-        <Box
-          sx={{
-            color: color,
-            fontSize: { xs: 36, sm: 48 },
-            mb: 2,
-            display: 'flex',
-            justifyContent: 'center',
-          }}
+        <div
+          className="mb-3 d-flex justify-content-center"
+          style={{ color: color, fontSize: '48px' }}
         >
           {icon}
-        </Box>
+        </div>
         
         {/* Title */}
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.text.primary, fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}>
+        <h6 className="fw-bold mb-0" style={{ color: theme.colors.text }}>
           {title}
-        </Typography>
-      </CardContent>
+        </h6>
+      </Card.Body>
     </Card>
   );
 
   return (
-    // Main Container (like <body> or main wrapper)
-    <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
-      
-      {/* Header/Navigation Bar */}
-      <AppBar position="static" elevation={0}>
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2, md: 3 } }}>
-          {/* Logo/Title Section */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
-              🐾 Pet Society Admin Dashboard
-            </Typography>
-          </Box>
-          
-          {/* Right Side Controls */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-            {/* Theme Toggle Button */}
-            <IconButton
-              color="inherit"
-              onClick={toggleTheme}
-              sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                },
-              }}
-            >
-              {mode === 'light' ? <DarkMode /> : <LightMode />}
-            </IconButton>
-            
-            {/* User Role Badge */}
-            <Chip
-              label={user?.is_superuser ? 'Super Admin' : 'Admin'}
-              color={user?.is_superuser ? 'error' : 'primary'}
-              size="small"
-              sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
-            />
-            
-            {/* User Menu Button */}
-            <IconButton
-              color="inherit"
-              onClick={handleMenuOpen}
-            >
-              <Avatar sx={{ width: { xs: 32, sm: 36 }, height: { xs: 32, sm: 36 }, bgcolor: 'primary.main' }}>
-                <AccountCircle />
-              </Avatar>
-            </IconButton>
-            
-            {/* User Dropdown Menu */}
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
-              <MenuItem disabled>
-                <Typography variant="body2">
-                  {user?.username}
-                </Typography>
-              </MenuItem>
-              <MenuItem onClick={handleLogout}>
-                <Logout sx={{ mr: 1 }} />
-                Logout
-              </MenuItem>
-            </Menu>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      {/* Main Content Area */}
-      <Box sx={{ px: { xs: 1, sm: 2, md: 3, lg: 4 }, py: { xs: 2, sm: 3, md: 4 } }}>
+    <Layout title="Pet Society Admin Dashboard">
+      <Container fluid className="p-4">
         
         {/* Welcome Banner Section */}
-        <Box 
-          sx={{ 
-            p: { xs: 2, sm: 3, md: 4 }, 
-            mb: { xs: 2, sm: 3, md: 4 }, 
-            textAlign: 'center',
-            background: mode === 'light'
-              ? 'linear-gradient(135deg, #1976d2, #42a5f5)'
-              : 'linear-gradient(135deg, #1a1a2e, #16213e)',
-            color: 'white',
-            borderRadius: 3,
+        <div 
+          className="p-4 mb-4 text-center text-white rounded-3"
+          style={{
+            background: theme.mode === 'light'
+              ? 'linear-gradient(135deg, #0d6efd, #0b5ed7)'
+              : 'linear-gradient(135deg, #212529, #343a40)',
           }}
         >
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+          <h2 className="fw-bold mb-2">
             Welcome back, {user?.username}! 👋
-          </Typography>
-          <Typography variant="h6" sx={{ opacity: 0.9, fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}>
+          </h2>
+          <p className="mb-0 opacity-75">
             Manage your Pet Society platform from here
-          </Typography>
-        </Box>
+          </p>
+        </div>
 
         {/* Statistics Section */}
         {stats && (
-          <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, mb: { xs: 2, sm: 3, md: 4 }, borderRadius: 3, backgroundColor: theme.palette.background.paper }}>
-            {/* Section Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <TrendingUp sx={{ mr: 2, color: 'primary.main', fontSize: { xs: 24, sm: 28, md: 32 } }} />
-              <Typography variant="h5" sx={{ fontWeight: 'bold', color: theme.palette.text.primary, fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}>
-                Platform Statistics
-              </Typography>
-            </Box>
-            
-            {/* Divider Line */}
-            <Divider sx={{ mb: 3 }} />
-            
-            {/* Statistics Grid (like Bootstrap row/col) */}
-            <Grid container spacing={{ xs: 2, sm: 3 }}>
-              {/* Total Users Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Total Users"
-                  value={stats.total_users}
-                  icon={<PeopleIcon sx={{ color: 'white', fontSize: { xs: 20, sm: 24, md: 28 } }} />}
-                  color="#1976d2"
-                  subtitle="Registered users"
+          <Card className="mb-4 border-0 shadow-sm">
+            <Card.Body className="p-4">
+              {/* Section Header */}
+              <div className="d-flex align-items-center mb-3">
+                <BsGraphUp 
+                  className="me-2" 
+                  style={{ color: theme.colors.primary, fontSize: '28px' }} 
                 />
-              </Grid>
+                <h4 className="fw-bold mb-0" style={{ color: theme.colors.text }}>
+                  Platform Statistics
+                </h4>
+              </div>
               
-              {/* Total Posts Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Total Posts"
-                  value={stats.total_posts}
-                  icon={<ArticleIcon sx={{ color: 'white', fontSize: { xs: 20, sm: 24, md: 28 } }} />}
-                  color="#2e7d32"
-                  subtitle="Animal listings"
-                />
-              </Grid>
+              <hr className="mb-4" />
               
-              {/* Categories Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Categories"
-                  value={stats.total_categories}
-                  icon={<CategoryIcon sx={{ color: 'white', fontSize: { xs: 20, sm: 24, md: 28 } }} />}
-                  color="#ed6c02"
-                  subtitle="Animal types"
-                />
-              </Grid>
-              
-              {/* Blocked Users Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Blocked Users"
-                  value={stats.blocked_users}
-                  icon={<PeopleIcon sx={{ color: 'white', fontSize: { xs: 20, sm: 24, md: 28 } }} />}
-                  color="#d32f2f"
-                  subtitle="Suspended accounts"
-                />
-              </Grid>
-            </Grid>
-          </Box>
+              {/* Statistics Grid */}
+              <Row className="g-3">
+                {/* Total Users Card */}
+                <Col xs={12} sm={6} md={3}>
+                  <StatCard
+                    title="Total Users"
+                    value={stats.total_users}
+                    icon={<BsPeople className="text-white" style={{ fontSize: '28px' }} />}
+                    color="#0d6efd"
+                    subtitle="Registered users"
+                  />
+                </Col>
+                
+                {/* Total Posts Card */}
+                <Col xs={12} sm={6} md={3}>
+                  <StatCard
+                    title="Total Posts"
+                    value={stats.total_posts}
+                    icon={<BsFileText className="text-white" style={{ fontSize: '28px' }} />}
+                    color="#198754"
+                    subtitle="Animal listings"
+                  />
+                </Col>
+                
+                {/* Categories Card */}
+                <Col xs={12} sm={6} md={3}>
+                  <StatCard
+                    title="Categories"
+                    value={stats.total_categories}
+                    icon={<BsCollection className="text-white" style={{ fontSize: '28px' }} />}
+                    color="#ffc107"
+                    subtitle="Animal types"
+                  />
+                </Col>
+                
+                {/* Blocked Users Card */}
+                <Col xs={12} sm={6} md={3}>
+                  <StatCard
+                    title="Blocked Users"
+                    value={stats.blocked_users}
+                    icon={<BsPeople className="text-white" style={{ fontSize: '28px' }} />}
+                    color="#dc3545"
+                    subtitle="Suspended accounts"
+                  />
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
         )}
 
         {/* Quick Actions Section */}
-        <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, borderRadius: 3, backgroundColor: theme.palette.background.paper }}>
-          {/* Section Header */}
-          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3, color: theme.palette.text.primary, fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}>
-            Quick Actions
-          </Typography>
-          
-          {/* Divider Line */}
-          <Divider sx={{ mb: 3 }} />
-          
-          {/* Navigation Grid */}
-          <Grid container spacing={{ xs: 2, sm: 3 }}>
-            {/* Categories Navigation Card */}
-            <Grid item xs={12} sm={6} md={3}>
-              <NavigationCard
-                title="Categories"
-                icon={<CategoryIcon />}
-                onClick={() => navigate('/categories')}
-                color="#1976d2"
-              />
-            </Grid>
+        <Card className="border-0 shadow-sm">
+          <Card.Body className="p-4">
+            {/* Section Header */}
+            <h4 className="fw-bold mb-3" style={{ color: theme.colors.text }}>
+              Quick Actions
+            </h4>
             
-            {/* Users Navigation Card */}
-            <Grid item xs={12} sm={6} md={3}>
-              <NavigationCard
-                title="Users"
-                icon={<PeopleIcon />}
-                onClick={() => navigate('/users')}
-                color="#2e7d32"
-              />
-            </Grid>
+            <hr className="mb-4" />
             
-            {/* Posts Navigation Card */}
-            <Grid item xs={12} sm={6} md={3}>
-              <NavigationCard
-                title="Posts"
-                icon={<ArticleIcon />}
-                onClick={() => navigate('/posts')}
-                color="#ed6c02"
-              />
-            </Grid>
-            
-            {/* Overview Navigation Card */}
-            <Grid item xs={12} sm={6} md={3}>
-              <NavigationCard
-                title="Overview"
-                icon={<DashboardIcon />}
-                onClick={() => navigate('/')}
-                color="#9c27b0"
-              />
-            </Grid>
-          </Grid>
-        </Box>
-      </Box>
-    </Box>
+            {/* Navigation Grid */}
+            <Row className="g-3">
+              {/* Categories Navigation Card */}
+              <Col xs={12} sm={6} md={3}>
+                <NavigationCard
+                  title="Categories"
+                  icon={<BsCollection />}
+                  onClick={() => navigate('/categories')}
+                  color="#0d6efd"
+                />
+              </Col>
+              
+              {/* Users Navigation Card */}
+              <Col xs={12} sm={6} md={3}>
+                <NavigationCard
+                  title="Users"
+                  icon={<BsPeople />}
+                  onClick={() => navigate('/users')}
+                  color="#198754"
+                />
+              </Col>
+              
+              {/* Posts Navigation Card */}
+              <Col xs={12} sm={6} md={3}>
+                <NavigationCard
+                  title="Posts"
+                  icon={<BsFileText />}
+                  onClick={() => navigate('/posts')}
+                  color="#ffc107"
+                />
+              </Col>
+              
+              {/* Overview Navigation Card */}
+              <Col xs={12} sm={6} md={3}>
+                <NavigationCard
+                  title="Overview"
+                  icon={<BsGraphUp />}
+                  onClick={() => navigate('/')}
+                  color="#6f42c1"
+                />
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Container>
+    </Layout>
   );
 };
 
