@@ -34,16 +34,16 @@ const AppContent = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="dashboard/login" element={<LoginPage />} />
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
           }
-        />
-        <Route
+        >
+           <Route
           path="/categories"
           element={
             <ProtectedRoute>
@@ -67,6 +67,8 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+        </Route>
+       
       </Routes>
     </Router>
   );
