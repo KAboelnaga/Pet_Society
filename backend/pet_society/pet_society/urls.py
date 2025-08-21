@@ -22,6 +22,11 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('pet_society.api_urls')),
+    path('users/', include('users.urls', namespace='users')),
+    # path('posts/', include('posts.urls', namespace='posts')),
+    # path('comments/', include('comments.urls', namespace='comments')),
+    # path('chats/', include('chats.urls', namespace='chats')),
+    # path('followers/', include('followers.urls', namespace='followers')),
 ]
 
 # Serve media files during development

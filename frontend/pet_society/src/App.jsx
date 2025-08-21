@@ -1,9 +1,44 @@
 import React from 'react';
 import HomePage from './pages/HomePage';
 import './App.css';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Login from './components/auth/Login'
+import Register from './components/auth/Register';
+import LoadingSpinner from './components/LoadingSpinner';
+const PrivateRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) {
+    return <LoadingSpinner size="large"/>;
+  }
+  return isAuthenticated ? children : <Navigate to="/login" />;
+}
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) {
+    return <LoadingSpinner size="large" />;
+  }
+  return !isAuthenticated ? children : <Navigate to="/" />;
+}
+function AppRoutes() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        {/* Add more routes as needed */}
+      </Routes>
+    </Router>
 
+  );
+}
 function App() {
-  return <HomePage />;
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
+  );
 }
 
 export default App;
