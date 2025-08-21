@@ -40,9 +40,9 @@ const Register = () => {
     setErrors({});
 
     const result = await register(formData);
-    
+
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/');
     } else {
       setErrors(result.error);
     }

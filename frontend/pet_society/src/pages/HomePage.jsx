@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PostList from '../components/PostList';
 import Sidebar from '../components/Sidebar';
+import Navbar from '../components/Navbar';
 import '../App.css';
 
 /**
@@ -13,12 +14,15 @@ const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   return (
-    <div className="homepage-container">
-      {/* Sidebar for categories */}
-      <Sidebar selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
-      {/* Main feed for posts */}
-      <div className="feed-container">
-        <PostList selectedCategory={selectedCategory} />
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="homepage-container">
+        {/* Sidebar for categories */}
+        <Sidebar selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
+        {/* Main feed for posts */}
+        <div className="feed-container">
+          <PostList selectedCategory={selectedCategory} />
+        </div>
       </div>
     </div>
   );

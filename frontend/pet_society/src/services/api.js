@@ -1,7 +1,7 @@
 // services/api.js
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 // Create axios instance
 const api = axios.create({
@@ -38,14 +38,35 @@ api.interceptors.response.use(
   }
 );
 
-// Auth API calls
+// Auth API calls (these use the full base URL since they're not under /api/)
+const authApi = axios.create({
+  baseURL: 'http://127.0.0.1:8000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add token interceptor to auth API as well
+authApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Token ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export const authAPI = {
-  register: (userData) => api.post('/users/register/', userData),
-  login: (credentials) => api.post('/users/login/', credentials),
-  logout: () => api.post('/users/logout/'),
-  getProfile: () => api.get('/users/profile/'),
-  updateProfile: (data) => api.patch('/users/profile/update/', data),
-  getUserProfile: (username) => api.get(`/users/profile/${username}/`),
+  register: (userData) => authApi.post('/users/register/', userData),
+  login: (credentials) => authApi.post('/users/login/', credentials),
+  logout: () => authApi.post('/users/logout/'),
+  getProfile: () => authApi.get('/users/profile/'),
+  updateProfile: (data) => authApi.patch('/users/profile/update/', data),
+  getUserProfile: (username) => authApi.get(`/users/profile/${username}/`),
 };
 
 // Helper functions

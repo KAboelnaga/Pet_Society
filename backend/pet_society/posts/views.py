@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework import generics, filters
+from rest_framework import generics, filters, permissions
 from rest_framework.pagination import PageNumberPagination
 from .models import Post, Category
 from .serializers import PostSerializer, CategorySerializer
@@ -23,6 +23,7 @@ class PostListAPIView(generics.ListAPIView):
     pagination_class = StandardResultsSetPagination
     filter_backends = [filters.OrderingFilter]
     ordering = ['-created_at']
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         queryset = Post.objects.all().order_by('-created_at')
@@ -37,3 +38,4 @@ class CategoryListAPIView(generics.ListAPIView):
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny]
