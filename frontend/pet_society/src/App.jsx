@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import LoadingScreen from './components/LoadingScreen';
-import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import CategoriesPage from './pages/CategoriesPage';
 import UsersPage from './pages/UsersPage';
@@ -13,14 +12,22 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+const ProtectedRoute = ({ children, adminOnly = false }) => {
+  const { isAuthenticated, loading, user } = useAuth();
   
   if (loading) {
     return <LoadingScreen />;
   }
   
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />; // رجّعه للهوم لو مش لوجين
+  }
+
+  if (adminOnly && user?.role !== "admin") {
+    return <Navigate to="/" replace />; // رجّعه للهوم لو مش أدمن
+  }
+
+  return children;
 };
 
 // App Content Component
@@ -34,41 +41,22 @@ const AppContent = () => {
   return (
     <Router>
       <Routes>
-        <Route path="dashboard/login" element={<LoginPage />} />
+        {/* Dashboard + Nested Routes */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute adminOnly>
               <Dashboard />
             </ProtectedRoute>
           }
         >
-           <Route
-          path="/categories"
-          element={
-            <ProtectedRoute>
-              <CategoriesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/users"
-          element={
-            <ProtectedRoute>
-              <UsersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/posts"
-          element={
-            <ProtectedRoute>
-              <PostsPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route path="categories" element={<CategoriesPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="posts" element={<PostsPage />} />
         </Route>
-       
+
+        {/* Redirect unknown routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
