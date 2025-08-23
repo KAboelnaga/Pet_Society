@@ -1,10 +1,9 @@
-from django.shortcuts import render
-from rest_framework import generics, filters, permissions
+from rest_framework import generics, filters, permissions, viewsets
 from rest_framework.pagination import PageNumberPagination
 from .models import Post, Category
 from .serializers import PostSerializer, CategorySerializer
+from .permissions import IsOwnerOrReadOnly
 
-# Create your views here.
 
 class StandardResultsSetPagination(PageNumberPagination):
     """
@@ -13,6 +12,7 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 50
+
 
 class PostListAPIView(generics.ListAPIView):
     """
@@ -32,6 +32,7 @@ class PostListAPIView(generics.ListAPIView):
             queryset = queryset.filter(category__id=category)
         return queryset
 
+
 class CategoryListAPIView(generics.ListAPIView):
     """
     API endpoint to list all categories.
@@ -39,3 +40,38 @@ class CategoryListAPIView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
+
+
+class PostCreateAPIView(generics.CreateAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        print(self.request.data)  # DEBUG
+        serializer.save(author=self.request.user)
+
+
+class PostDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API endpoint to retrieve, update, or delete a single post.
+    Only the post author can update or delete it.
+    """
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class PostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all().order_by('-created_at')
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
