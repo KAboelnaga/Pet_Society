@@ -10,15 +10,30 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'name']
 
+
 class PostSerializer(serializers.ModelSerializer):
     """
     Serializer for Post model.
-    Used to output post data for the homepage and post lists.
-    Includes category name and author username for display.
+    Handles both reading and writing of posts.
+    - On read: show category name and author username
+    - On write: accept category ID, author is set automatically
     """
-    category = serializers.StringRelatedField()
-    author = serializers.StringRelatedField()
+    # Accept category id when writing
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    # Show category name when reading
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    # Show author username when reading
+    author = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Post
-        fields = ['id', 'title', 'image', 'content', 'category', 'author', 'created_at']
+        fields = [
+            'id',
+            'title',
+            'image',
+            'content',
+            'category',       # for sending id when creating/updating
+            'category_name',  # for displaying readable name in responses
+            'author',
+            'created_at',
+        ]

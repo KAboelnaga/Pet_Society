@@ -4,15 +4,22 @@ import '../App.css';
 /**
  * PostCard component
  * Displays a single post preview (image, title, author, category, created_at, short content).
- * Image is clickable and links to the post detail page (not implemented here).
+ * Image is clickable and links to the post detail page.
  */
 const PostCard = ({ post }) => {
   // Show only a short preview of content
-  const preview = post.content.length > 100 ? post.content.slice(0, 100) + '...' : post.content;
+  const preview =
+    post.content.length > 100
+      ? post.content.slice(0, 100) + '...'
+      : post.content;
 
   return (
     <div className="post-card">
-      <a href={`/posts/${post.id}`} className="post-image-link" title="Click to view full post">
+      <a
+        href={`/posts/${post.id}`}
+        className="post-image-link"
+        title="Click to view full post"
+      >
         {post.image ? (
           <img src={post.image} alt={post.title} className="post-image" />
         ) : (
@@ -23,8 +30,12 @@ const PostCard = ({ post }) => {
         <h3 className="post-title">{post.title}</h3>
         <div className="post-meta">
           <span className="post-author">by {post.author}</span>
-          <span className="post-category">in {post.category}</span>
-          <span className="post-date">{new Date(post.created_at).toLocaleDateString()}</span>
+          <span className="post-category">
+            in {post.category_name || 'Uncategorized'}
+          </span>
+          <span className="post-date">
+            {new Date(post.created_at).toLocaleDateString()}
+          </span>
         </div>
         <p className="post-preview">{preview}</p>
       </div>
