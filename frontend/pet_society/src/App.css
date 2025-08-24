@@ -522,3 +522,169 @@ body, html, #root {
     max-width: 100%;
   }
 }
+
+/* Delete button styles */
+.delete-button {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.delete-button:hover {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.delete-button:active {
+  transform: scale(0.95);
+}
+
+/* Delete confirmation modal styles */
+.delete-confirmation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.delete-confirmation-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.delete-confirmation-modal h3 {
+  margin: 0 0 16px 0;
+  color: #dc3545;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.delete-confirmation-modal p {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.delete-content-preview {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 3px solid #dc3545;
+  font-style: italic;
+  color: #666;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.delete-confirmation-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.delete-confirm-btn {
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-weight: 500;
+}
+
+.delete-confirm-btn:hover {
+  background: #c82333;
+}
+
+.delete-cancel-btn {
+  background: #6c757d;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-weight: 500;
+}
+
+.delete-cancel-btn:hover {
+  background: #5a6268;
+}
+
+/* Update comment header to accommodate delete button */
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.comment-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.comment-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Update reply styles to accommodate delete button */
+.reply {
+  padding: 12px;
+  margin-top: 8px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+  position: relative;
+}
+
+.reply .comment-header {
+  margin-bottom: 6px;
+}
+
+/* Responsive adjustments for delete buttons */
+@media (max-width: 480px) {
+  .delete-confirmation-modal {
+    margin: 20px;
+    padding: 20px;
+  }
+  
+  .delete-confirmation-actions {
+    flex-direction: column;
+  }
+  
+  .delete-confirm-btn,
+  .delete-cancel-btn {
+    width: 100%;
+  }
+}

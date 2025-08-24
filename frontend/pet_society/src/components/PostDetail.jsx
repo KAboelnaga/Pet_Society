@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { HeartIcon, ChatBubbleLeftIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { HeartIcon, ChatBubbleLeftIcon, ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -27,6 +27,7 @@ const PostDetail = () => {
   const [replyContent, setReplyContent] = useState('');
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     console.log('PostDetail useEffect triggered with id:', id);
@@ -230,6 +231,43 @@ const PostDetail = () => {
     }
   };
 
+  const handleDeleteComment = async (commentId, isReply = false) => {
+    console.log('Deleting comment/reply:', commentId, 'isReply:', isReply);
+    
+    try {
+      await api.delete(`comments/${commentId}/`);
+      console.log('Comment/reply deleted successfully');
+      
+      // Refresh comments to update the UI
+      fetchComments();
+      
+      // Update post comments count
+      setPost(prev => ({
+        ...prev,
+        comments_count: Math.max(0, (prev.comments_count || 0) - 1)
+      }));
+      
+      // Clear delete confirmation
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting comment/reply:', error);
+      console.error('Error response:', error.response?.data);
+      alert('Failed to delete comment. Please try again.');
+    }
+  };
+
+  const canDeleteComment = (comment) => {
+    if (!isAuthenticated || !user) return false;
+    
+    // Comment author can delete their own comment
+    if (comment.author.id === user.id) return true;
+    
+    // Post author can delete any comment on their post
+    if (post && post.author === user.id) return true;
+    
+    return false;
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -334,8 +372,22 @@ const PostDetail = () => {
             (Array.isArray(comments) ? comments : []).map(comment => (
               <div key={comment.id} className="comment">
                 <div className="comment-header">
-                  <span className="comment-author">{comment.author.username}</span>
-                  <span className="comment-date">{formatDate(comment.created_at)}</span>
+                  <div className="comment-header-left">
+                    <span className="comment-author">{comment.author.username}</span>
+                    <span className="comment-date">{formatDate(comment.created_at)}</span>
+                  </div>
+                  <div className="comment-header-right">
+                    {/* Delete button for comments */}
+                    {canDeleteComment(comment) && (
+                      <button
+                        onClick={() => setDeleteConfirm({ id: comment.id, type: 'comment', content: comment.content })}
+                        className="delete-button"
+                        title="Delete comment"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="comment-content">
                   <p>{comment.content}</p>
@@ -389,8 +441,22 @@ const PostDetail = () => {
                     {comment.replies.map(reply => (
                       <div key={reply.id} className="reply">
                         <div className="comment-header">
-                          <span className="comment-author">{reply.author.username}</span>
-                          <span className="comment-date">{formatDate(reply.created_at)}</span>
+                          <div className="comment-header-left">
+                            <span className="comment-author">{reply.author.username}</span>
+                            <span className="comment-date">{formatDate(reply.created_at)}</span>
+                          </div>
+                          <div className="comment-header-right">
+                            {/* Delete button for replies */}
+                            {canDeleteComment(reply) && (
+                              <button
+                                onClick={() => setDeleteConfirm({ id: reply.id, type: 'reply', content: reply.content })}
+                                className="delete-button"
+                                title="Delete reply"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div className="comment-content">
                           <p>{reply.content}</p>
@@ -404,6 +470,31 @@ const PostDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="delete-confirmation-overlay">
+          <div className="delete-confirmation-modal">
+            <h3>Delete {deleteConfirm.type === 'reply' ? 'Reply' : 'Comment'}</h3>
+            <p>Are you sure you want to delete this {deleteConfirm.type}?</p>
+            <p className="delete-content-preview">"{deleteConfirm.content.substring(0, 50)}{deleteConfirm.content.length > 50 ? '...' : ''}"</p>
+            <div className="delete-confirmation-actions">
+              <button
+                onClick={() => handleDeleteComment(deleteConfirm.id, deleteConfirm.type === 'reply')}
+                className="delete-confirm-btn"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="delete-cancel-btn"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
