@@ -31,3 +31,38 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def likes_count(self):
+        """Get the total number of likes for this post"""
+        return self.likes.filter(is_liked=True).count()
+
+    @property
+    def comments_count(self):
+        """Get the total number of comments for this post"""
+        return self.comments.count()
+
+class Like(models.Model):
+    """Like model for posts - composite relation between User and Post"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_likes')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='likes')
+    is_liked = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'post')
+        indexes = [
+            models.Index(fields=['post', '-created_at']),
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        status = "liked" if self.is_liked else "unliked"
+        return f"{self.user.username} {status} {self.post.title}"
+
+    def toggle_like(self):
+        """Toggle the like status"""
+        self.is_liked = not self.is_liked
+        self.save()
+        return self.is_liked
