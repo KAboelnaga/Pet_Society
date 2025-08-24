@@ -1,39 +1,31 @@
+# serializers.py
 from rest_framework import serializers
 from .models import Post, Category
 
 class CategorySerializer(serializers.ModelSerializer):
-    """
-    Serializer for Category model.
-    Used to output category data via the API.
-    """
     class Meta:
         model = Category
-        fields = ['id', 'name']
-
+        fields = ["id", "name"]
 
 class PostSerializer(serializers.ModelSerializer):
-    """
-    Serializer for Post model.
-    Handles both reading and writing of posts.
-    - On read: show category name and author username
-    - On write: accept category ID, author is set automatically
-    """
+    # Show author username
+    username = serializers.CharField(source="author.username", read_only=True)
+    # Return full category object when reading
+    category = CategorySerializer(read_only=True)
     # Accept category id when writing
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
-    # Show category name when reading
-    category_name = serializers.CharField(source='category.name', read_only=True)
-    # Show author username when reading
-    author = serializers.StringRelatedField(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), source="category", write_only=True
+    )
 
     class Meta:
         model = Post
         fields = [
-            'id',
-            'title',
-            'image',
-            'content',
-            'category',       # for sending id when creating/updating
-            'category_name',  # for displaying readable name in responses
-            'author',
-            'created_at',
+            "id",
+            "title",
+            "image",
+            "content",
+            "category",      # read → {id, name}
+            "category_id",   # write → category id
+            "username",      # read → author.username
+            "created_at",
         ]

@@ -1,22 +1,33 @@
 import React, { useState, useEffect } from "react";
+import {
+  XMarkIcon,
+  CheckIcon,
+  ArrowUturnLeftIcon,
+} from "@heroicons/react/24/outline";
 
-const CreatePostModal = ({ isOpen, onClose }) => {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [category, setCategory] = useState(""); // category id
+const EditPostModal = ({ isOpen, onClose, post }) => {
+  const [title, setTitle] = useState(post?.title || "");
+  const [content, setContent] = useState(post?.content || "");
+  const [categoryId, setCategoryId] = useState(post?.category?.id || ""); // ✅ use category.id
   const [categories, setCategories] = useState([]);
-  const [image, setImage] = useState(null); // for image upload
+  const [image, setImage] = useState(null);
+
+  useEffect(() => {
+    if (post) {
+      setTitle(post.title);
+      setContent(post.content);
+      setCategoryId(post.category?.id || ""); // ✅ reset when post changes
+    }
+  }, [post]);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const res = await fetch("http://localhost:8000/api/categories/");
-        if (!res.ok) throw new Error("Failed to fetch categories");
         const data = await res.json();
         setCategories(Array.isArray(data) ? data : data.results || []);
       } catch (err) {
         console.error("Error fetching categories:", err);
-        setCategories([]);
       }
     };
     fetchCategories();
@@ -26,31 +37,32 @@ const CreatePostModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("You must be logged in to create a post.");
+      alert("You must be logged in to edit a post.");
       return;
     }
 
     try {
-      // Use FormData for image upload
       const formData = new FormData();
       formData.append("title", title);
       formData.append("content", content);
-      formData.append("category_id", category);
+      formData.append("category_id", categoryId); // ✅ send category_id instead of category
       if (image) formData.append("image", image);
 
-      const response = await fetch("http://localhost:8000/api/posts/create/", {
-        method: "POST",
-        headers: {
-          Authorization: `Token ${token}`, // DRF auth
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `http://localhost:8000/api/posts/${post.id}/`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       if (response.ok) {
-        alert("Post created successfully!");
+        alert("Post updated successfully!");
         onClose();
         window.location.reload();
       } else {
@@ -59,27 +71,28 @@ const CreatePostModal = ({ isOpen, onClose }) => {
         alert(err.detail || JSON.stringify(err));
       }
     } catch (error) {
-      console.error("Error creating post:", error);
+      console.error("Error updating post:", error);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg relative">
+        {/* ✅ Close icon */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
         >
-          ✕
+          <XMarkIcon className="h-6 w-6" />
         </button>
 
-        <h2 className="text-xl font-semibold mb-4">Create a New Post</h2>
+        <h2 className="text-xl font-semibold mb-4">Edit Post</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Category dropdown */}
+          {/* ✅ Dropdown shows category name but stores id */}
           <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2"
           >
@@ -91,7 +104,6 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             ))}
           </select>
 
-          {/* Title */}
           <input
             type="text"
             placeholder="Post title"
@@ -101,7 +113,6 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             className="w-full border rounded-lg px-3 py-2"
           />
 
-          {/* Content */}
           <textarea
             placeholder="Write your post..."
             value={content}
@@ -110,7 +121,6 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             className="w-full border rounded-lg px-3 py-2 h-32"
           />
 
-          {/* Image upload */}
           <input
             type="file"
             accept="image/*"
@@ -118,20 +128,24 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             className="w-full border rounded-lg px-3 py-2"
           />
 
-          {/* Buttons */}
           <div className="flex justify-end gap-2">
+            {/* Cancel button */}
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+              className="flex items-center gap-1 px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
             >
+              <ArrowUturnLeftIcon className="h-5 w-5" />
               Cancel
             </button>
+
+            {/* Save button */}
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              className="flex items-center gap-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
             >
-              Post
+              <CheckIcon className="h-5 w-5" />
+              Save
             </button>
           </div>
         </form>
@@ -140,4 +154,4 @@ const CreatePostModal = ({ isOpen, onClose }) => {
   );
 };
 
-export default CreatePostModal;
+export default EditPostModal;
