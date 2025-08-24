@@ -4,26 +4,26 @@ import api from "../services/api";
 import PostCard from "./PostCard";
 import "../App.css";
 
-const PostList = ({ selectedCategory }) => {
+const PostList = ({ selectedCategory, currentPage, setCurrentPage }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
 
-  // ✅ Username string from localStorage
+  // ✅ Username object from localStorage
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
-    setLoading(true);
-    let url = `posts/?page=${page}`;
-    if (selectedCategory) {
-      url += `&category=${selectedCategory}`;
-    }
+    if (!setCurrentPage) return; // fallback
 
-    api
-      .get(url)
-      .then((res) => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      try {
+        let url = `posts/?page=${currentPage}`;
+        if (selectedCategory) url += `&category=${selectedCategory}`;
+
+        const res = await api.get(url);
         const data = res.data;
+
         if (data.results) {
           setPosts(data.results);
           setHasNext(!!data.next);
@@ -31,17 +31,25 @@ const PostList = ({ selectedCategory }) => {
           setPosts(data);
           setHasNext(false);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Error fetching posts:", err);
         setPosts([]);
         setHasNext(false);
-      })
-      .finally(() => setLoading(false));
-  }, [selectedCategory, page]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleNext = () => setPage(page + 1);
-  const handlePrev = () => setPage(page > 1 ? page - 1 : 1);
+    fetchPosts();
+  }, [selectedCategory, currentPage]);
+
+  const handleNext = () => {
+    if (hasNext) setCurrentPage(currentPage + 1);
+  };
+
+  const handlePrev = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
 
   if (loading) return <div className="loading">Loading posts...</div>;
   if (!posts.length) return <div className="no-posts">No posts found.</div>;
@@ -51,15 +59,16 @@ const PostList = ({ selectedCategory }) => {
       {posts.map((post) => (
         <PostCard key={post.id} post={post} currentUser={currentUser} />
       ))}
+
       <div className="pagination flex items-center justify-center gap-4 mt-6">
         <button
           onClick={handlePrev}
-          disabled={page === 1}
+          disabled={currentPage === 1}
           className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
         >
           Previous
         </button>
-        <span>Page {page}</span>
+        <span>Page {currentPage}</span>
         <button
           onClick={handleNext}
           disabled={!hasNext}

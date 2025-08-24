@@ -14,6 +14,7 @@ import '../App.css';
 const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   return (
     <div className="min-h-screen bg-gray-50 relative">
@@ -23,11 +24,16 @@ const HomePage = () => {
         <Sidebar
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
+          setCurrentPage={setCurrentPage}
         />
 
         {/* Main feed for posts */}
         <div className="feed-container">
-          <PostList selectedCategory={selectedCategory} />
+          <PostList
+          selectedCategory={selectedCategory}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          />
         </div>
       </div>
 

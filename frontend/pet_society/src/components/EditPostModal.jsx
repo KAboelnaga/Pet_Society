@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   XMarkIcon,
   CheckIcon,
@@ -8,18 +8,14 @@ import {
 const EditPostModal = ({ isOpen, onClose, post }) => {
   const [title, setTitle] = useState(post?.title || "");
   const [content, setContent] = useState(post?.content || "");
-  const [categoryId, setCategoryId] = useState(post?.category?.id || ""); // ✅ use category.id
+  const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
   const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
 
-  useEffect(() => {
-    if (post) {
-      setTitle(post.title);
-      setContent(post.content);
-      setCategoryId(post.category?.id || ""); // ✅ reset when post changes
-    }
-  }, [post]);
+  const fileInputRef = useRef();
 
+  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -33,7 +29,41 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
     fetchCategories();
   }, []);
 
+  // Initialize form values
+  useEffect(() => {
+    if (!post || categories.length === 0) return;
+
+    setTitle(post.title);
+    setContent(post.content);
+
+    // Match category_name to category id
+    const matchedCategory = categories.find(
+      (cat) => cat.name === post.category_name
+    );
+    setCategoryId(matchedCategory?.id || "");
+
+    setImage(null);
+    setPreview(post.image || null);
+  }, [post, categories]);
+
   if (!isOpen) return null;
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      setImage(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,7 +77,7 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
       const formData = new FormData();
       formData.append("title", title);
       formData.append("content", content);
-      formData.append("category_id", categoryId); // ✅ send category_id instead of category
+      formData.append("category_id", categoryId);
       if (image) formData.append("image", image);
 
       const response = await fetch(
@@ -75,12 +105,31 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
     }
   };
 
+  const handleCancel = () => {
+    setTitle(post.title);
+    setContent(post.content);
+
+    const matchedCategory = categories.find(
+      (cat) => cat.name === post.category_name
+    );
+    setCategoryId(matchedCategory?.id || "");
+
+    setImage(null);
+    setPreview(post.image || null);
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg relative">
-        {/* ✅ Close icon */}
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleCancel}
+    >
+      <div
+        className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
-          onClick={onClose}
+          onClick={handleCancel}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
         >
           <XMarkIcon className="h-6 w-6" />
@@ -89,7 +138,7 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
         <h2 className="text-xl font-semibold mb-4">Edit Post</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* ✅ Dropdown shows category name but stores id */}
+          {/* Category Dropdown */}
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
@@ -121,25 +170,44 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
             className="w-full border rounded-lg px-3 py-2 h-32"
           />
 
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImage(e.target.files[0])}
-            className="w-full border rounded-lg px-3 py-2"
-          />
+          {/* Large Image Preview */}
+          {preview && (
+            <div className="w-full mb-4">
+              <img
+                src={preview}
+                alt="preview"
+                className="w-full max-h-72 object-contain rounded-lg"
+              />
+            </div>
+          )}
+
+          {/* Drag & Drop / Click Box */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            onClick={() => fileInputRef.current.click()}
+            className="w-full border-2 border-dashed border-gray-300 rounded-lg h-40 flex items-center justify-center cursor-pointer text-gray-500 hover:border-gray-400 relative p-2"
+          >
+            <p>Drag & drop an image here, or click to select</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
 
           <div className="flex justify-end gap-2">
-            {/* Cancel button */}
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleCancel}
               className="flex items-center gap-1 px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
             >
               <ArrowUturnLeftIcon className="h-5 w-5" />
               Cancel
             </button>
 
-            {/* Save button */}
             <button
               type="submit"
               className="flex items-center gap-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
