@@ -1,5 +1,6 @@
 import React from 'react';
 import HomePage from './pages/HomePage';
+import PostDetail from './components/PostDetail';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -25,6 +26,7 @@ function AppRoutes() {
     <Router>
       <Routes>
         <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />
+        <Route path="/posts/:id" element={<PrivateRoute><PostDetail /></PrivateRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         {/* Add more routes as needed */}
