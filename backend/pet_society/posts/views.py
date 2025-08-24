@@ -1,7 +1,10 @@
-from rest_framework import generics, filters, permissions, viewsets
+from rest_framework import generics, filters, permissions, viewsets, status
 from rest_framework.pagination import PageNumberPagination
-from .models import Post, Category
-from .serializers import PostSerializer, CategorySerializer
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from .models import Post, Category, Like
+from .serializers import PostSerializer, CategorySerializer, PostDetailSerializer, LikeSerializer
 from .permissions import IsOwnerOrReadOnly
 
 
@@ -75,3 +78,51 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    def get_serializer_class(self):
+        """Use detailed serializer for retrieve actions"""
+        if self.action in ['retrieve']:
+            return PostDetailSerializer
+        return PostSerializer
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def like(self, request, pk=None):
+        """Like or unlike a post"""
+        post = self.get_object()
+        user = request.user
+        
+        # Check if user already liked this post
+        like_obj, created = Like.objects.get_or_create(
+            user=user, 
+            post=post,
+            defaults={'is_liked': True}
+        )
+        
+        if not created:
+            # Toggle like status
+            like_obj.toggle_like()
+        
+        return Response({
+            'is_liked': like_obj.is_liked,
+            'likes_count': post.likes_count
+        })
+
+    @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny])
+    def likes(self, request, pk=None):
+        """Get all likes for a post"""
+        post = self.get_object()
+        likes = post.likes.filter(is_liked=True)
+        serializer = LikeSerializer(likes, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny])
+    def user_like_status(self, request, pk=None):
+        """Get current user's like status for a post"""
+        post = self.get_object()
+        if request.user.is_authenticated:
+            try:
+                like_obj = Like.objects.get(user=request.user, post=post)
+                return Response({'is_liked': like_obj.is_liked})
+            except Like.DoesNotExist:
+                return Response({'is_liked': False})
+        return Response({'is_liked': False})
