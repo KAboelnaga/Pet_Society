@@ -31,3 +31,32 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def like_count(self):
+        """Get the total number of likes for this post."""
+        return self.likes.filter(is_liked=True).count()
+
+    @property
+    def comment_count(self):
+        """Get the total number of comments for this post."""
+        return self.comments.count()
+
+class Like(models.Model):
+    """
+    Like model to handle user likes on posts.
+    Uses composite key approach for efficient querying.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_likes')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='likes')
+    is_liked = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['user', 'post']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        status = "liked" if self.is_liked else "unliked"
+        return f'{self.user.username} {status} {self.post.title}'

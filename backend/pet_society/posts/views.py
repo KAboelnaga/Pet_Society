@@ -1,8 +1,11 @@
 from django.shortcuts import render
-from rest_framework import generics, filters, permissions
+from rest_framework import generics, filters, permissions, status
 from rest_framework.pagination import PageNumberPagination
-from .models import Post, Category
-from .serializers import PostSerializer, CategorySerializer
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from django.shortcuts import get_object_or_404
+from .models import Post, Category, Like
+from .serializers import PostSerializer, CategorySerializer, LikeSerializer
 
 # Create your views here.
 
@@ -32,6 +35,14 @@ class PostListAPIView(generics.ListAPIView):
             queryset = queryset.filter(category__id=category)
         return queryset
 
+class PostDetailAPIView(generics.RetrieveAPIView):
+    """
+    API endpoint to retrieve a single post with full details.
+    """
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [permissions.AllowAny]
+
 class CategoryListAPIView(generics.ListAPIView):
     """
     API endpoint to list all categories.
@@ -39,3 +50,33 @@ class CategoryListAPIView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
+
+class LikeToggleView(generics.GenericAPIView):
+    """
+    Toggle like on a post.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = LikeSerializer
+
+    def post(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+        user = request.user
+        
+        # Check if user already liked this post
+        like, created = Like.objects.get_or_create(
+            user=user,
+            post=post,
+            defaults={'is_liked': True}
+        )
+        
+        if not created:
+            # Toggle the like status
+            like.is_liked = not like.is_liked
+            like.save()
+        
+        # Return updated like status and counts
+        return Response({
+            'is_liked': like.is_liked,
+            'like_count': post.like_count,
+            'message': f'Post {"liked" if like.is_liked else "unliked"} successfully'
+        }, status=status.HTTP_200_OK)

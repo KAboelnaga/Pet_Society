@@ -42,6 +42,21 @@ const PostList = ({ selectedCategory }) => {
       .finally(() => setLoading(false));
   }, [selectedCategory, page]);
 
+  const handlePostUpdate = (updatedData) => {
+    // Update the specific post in the list
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === updatedData.post_id 
+          ? { 
+              ...post, 
+              is_liked_by_user: updatedData.is_liked,
+              like_count: updatedData.like_count 
+            }
+          : post
+      )
+    );
+  };
+
   const handleNext = () => setPage(page + 1);
   const handlePrev = () => setPage(page > 1 ? page - 1 : 1);
 
@@ -50,7 +65,13 @@ const PostList = ({ selectedCategory }) => {
 
   return (
     <div className="post-list">
-      {posts.map(post => <PostCard key={post.id} post={post} />)}
+      {posts.map(post => (
+        <PostCard 
+          key={post.id} 
+          post={post} 
+          onUpdate={handlePostUpdate}
+        />
+      ))}
       <div className="pagination">
         <button onClick={handlePrev} disabled={page === 1}>Previous</button>
         <span>Page {page}</span>
