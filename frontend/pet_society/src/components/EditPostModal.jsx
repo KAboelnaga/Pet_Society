@@ -5,9 +5,9 @@ import {
   ArrowUturnLeftIcon,
 } from "@heroicons/react/24/outline";
 
-const CreatePostModal = ({ isOpen, onClose }) => {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+const EditPostModal = ({ isOpen, onClose, post }) => {
+  const [title, setTitle] = useState(post?.title || "");
+  const [content, setContent] = useState(post?.content || "");
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
   const [image, setImage] = useState(null);
@@ -29,6 +29,23 @@ const CreatePostModal = ({ isOpen, onClose }) => {
     fetchCategories();
   }, []);
 
+  // Initialize form values
+  useEffect(() => {
+    if (!post || categories.length === 0) return;
+
+    setTitle(post.title);
+    setContent(post.content);
+
+    // Match category_name to category id
+    const matchedCategory = categories.find(
+      (cat) => cat.name === post.category_name
+    );
+    setCategoryId(matchedCategory?.id || "");
+
+    setImage(null);
+    setPreview(post.image || null);
+  }, [post, categories]);
+
   if (!isOpen) return null;
 
   const handleDrop = (e) => {
@@ -48,20 +65,11 @@ const CreatePostModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleCancel = () => {
-    setTitle("");
-    setContent("");
-    setCategoryId("");
-    setImage(null);
-    setPreview(null);
-    onClose();
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("You must be logged in to create a post.");
+      alert("You must be logged in to edit a post.");
       return;
     }
 
@@ -72,15 +80,20 @@ const CreatePostModal = ({ isOpen, onClose }) => {
       formData.append("category_id", categoryId);
       if (image) formData.append("image", image);
 
-      const response = await fetch("http://localhost:8000/api/posts/create/", {
-        method: "POST",
-        headers: { Authorization: `Token ${token}` },
-        body: formData,
-      });
+      const response = await fetch(
+        `http://localhost:8000/api/posts/${post.id}/`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       if (response.ok) {
-        alert("Post created successfully!");
-        handleCancel();
+        alert("Post updated successfully!");
+        onClose();
         window.location.reload();
       } else {
         const err = await response.json();
@@ -88,8 +101,22 @@ const CreatePostModal = ({ isOpen, onClose }) => {
         alert(err.detail || JSON.stringify(err));
       }
     } catch (error) {
-      console.error("Error creating post:", error);
+      console.error("Error updating post:", error);
     }
+  };
+
+  const handleCancel = () => {
+    setTitle(post.title);
+    setContent(post.content);
+
+    const matchedCategory = categories.find(
+      (cat) => cat.name === post.category_name
+    );
+    setCategoryId(matchedCategory?.id || "");
+
+    setImage(null);
+    setPreview(post.image || null);
+    onClose();
   };
 
   return (
@@ -108,7 +135,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
           <XMarkIcon className="h-6 w-6" />
         </button>
 
-        <h2 className="text-xl font-semibold mb-4">Create a New Post</h2>
+        <h2 className="text-xl font-semibold mb-4">Edit Post</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Category Dropdown */}
@@ -126,7 +153,6 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             ))}
           </select>
 
-          {/* Title */}
           <input
             type="text"
             placeholder="Post title"
@@ -136,7 +162,6 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             className="w-full border rounded-lg px-3 py-2"
           />
 
-          {/* Content */}
           <textarea
             placeholder="Write your post..."
             value={content}
@@ -173,7 +198,6 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             />
           </div>
 
-          {/* Buttons */}
           <div className="flex justify-end gap-2">
             <button
               type="button"
@@ -183,12 +207,13 @@ const CreatePostModal = ({ isOpen, onClose }) => {
               <ArrowUturnLeftIcon className="h-5 w-5" />
               Cancel
             </button>
+
             <button
               type="submit"
               className="flex items-center gap-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
             >
               <CheckIcon className="h-5 w-5" />
-              Post
+              Save
             </button>
           </div>
         </form>
@@ -197,4 +222,4 @@ const CreatePostModal = ({ isOpen, onClose }) => {
   );
 };
 
-export default CreatePostModal;
+export default EditPostModal;

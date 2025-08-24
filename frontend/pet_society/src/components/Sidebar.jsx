@@ -7,7 +7,7 @@ import '../App.css';
  * Fetches and displays all categories from the backend.
  * Allows user to select a category to filter posts.
  */
-const Sidebar = ({ selectedCategory, setSelectedCategory }) => {
+const Sidebar = ({ selectedCategory, setSelectedCategory, setCurrentPage }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +44,10 @@ const Sidebar = ({ selectedCategory, setSelectedCategory }) => {
       <ul className="category-list">
         <li
           className={!selectedCategory ? 'active' : ''}
-          onClick={() => setSelectedCategory(null)}
+          onClick={() => {
+            setSelectedCategory(null);
+            setCurrentPage?.(1); // reset page to 1
+          }}
         >
           All
         </li>
@@ -52,7 +55,10 @@ const Sidebar = ({ selectedCategory, setSelectedCategory }) => {
           <li
             key={cat.id}
             className={selectedCategory === cat.id ? 'active' : ''}
-            onClick={() => setSelectedCategory(cat.id)}
+            onClick={() => {
+              setSelectedCategory(cat.id);
+              setCurrentPage?.(1); // reset page to 1
+            }}
           >
             {cat.name}
           </li>

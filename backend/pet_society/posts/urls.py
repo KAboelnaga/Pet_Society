@@ -18,7 +18,7 @@ urlpatterns = [
     # Legacy API endpoints (keeping for backward compatibility)
     path('posts/', PostListAPIView.as_view(), name='post-list'),
     path('posts/create/', PostCreateAPIView.as_view(), name='post-create'),
-    path('posts/<int:pk>/', PostDetailAPIView.as_view(), name='post-detail'),
+    path('posts/<int:pk>/', PostDetailAPIView.as_view(), name='post-detail'),  # supports GET, PUT, DELETE
     path('categories/', CategoryListAPIView.as_view(), name='category-list'),
     
     # Include router URLs for ViewSets (includes like actions)
