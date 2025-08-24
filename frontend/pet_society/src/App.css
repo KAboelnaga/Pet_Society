@@ -180,6 +180,45 @@ body, html, #root {
   font-weight: 500;
 }
 
+/* PostCard like button styles */
+.post-stats .like-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.post-stats .like-button:hover {
+  background: #f8f9fa;
+  color: #333;
+}
+
+.post-stats .like-button.liked {
+  color: #e91e63;
+}
+
+.post-stats .like-button.liked:hover {
+  background: #fce4ec;
+}
+
+.post-stats .like-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.post-stats .like-button.disabled:hover {
+  background: none;
+  color: #666;
+}
+
 /* Post detail styles */
 .post-detail-container {
   max-width: 800px;
