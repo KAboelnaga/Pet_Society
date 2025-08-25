@@ -10,10 +10,19 @@ import PostDetail from './components/PostDetail';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import LoadingSpinner from './components/LoadingSpinner';
+import Dashboard from './pages/Dashboard';
+import CategoriesPage from './pages/CategoriesPage';
+import PostsPage from './pages/PostsPage';
+import UsersPage from './pages/UsersPage';
 
 // Chat components (global feature)
 import PetSocietyChat from './components/Chat/PetSocietyChat';
 import './App.css';
+
+// Bootstrap imports
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 // Create a theme
 const theme = createTheme({
@@ -41,7 +50,6 @@ const theme = createTheme({
     },
   },
 });
-
 function AppRoutes() {
   // Route protection components - now inside AuthProvider
   const PrivateRoute = ({ children }) => {
@@ -67,6 +75,12 @@ function AppRoutes() {
         <Route path="/posts/:id" element={<PrivateRoute><PostDetail /></PrivateRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        
+        {/* Admin routes */}
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/categories" element={<PrivateRoute><CategoriesPage /></PrivateRoute>} />
+        <Route path="/posts" element={<PrivateRoute><PostsPage /></PrivateRoute>} />
+        <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
       </Routes>
     </Router>
   );

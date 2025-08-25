@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework_simplejwt.views import TokenRefreshView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,7 +32,10 @@ urlpatterns = [
     path('api/', include('pet_society.api_urls')),
     
     # User authentication routes
-    path('users/', include('users.urls')),
+    path('users/', include('users.urls', namespace='users')),
+    path('api/auth/', include('users.urls')),
+    path('api/admins/', include('admins.urls', namespace='admins')),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
     # Placeholder for followers (when implemented)
     path('followers/', include('followers.urls')),
