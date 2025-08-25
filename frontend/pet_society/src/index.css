@@ -1,77 +1,9 @@
-/* :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-} */
-
-/* src/index.css */
+/* Tailwind base */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Default body styles */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -84,4 +16,299 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* ===============================
+   🌙 Bootstrap Dark Mode Support
+================================ */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #212529;
+  --bs-body-color: #f8f9fa;
+  --bs-border-color: #495057;
+  --bs-card-bg: #343a40;
+  --bs-table-bg: #343a40;
+  --bs-table-color: #f8f9fa;
+  --bs-table-border-color: #495057;
+  --bs-table-striped-bg: #2c3034;
+  --bs-table-hover-bg: #2c3034;
+  --bs-dropdown-bg: #343a40;
+  --bs-dropdown-link-color: #f8f9fa;
+  --bs-dropdown-link-hover-bg: #495057;
+  --bs-modal-bg: #343a40;
+  --bs-modal-header-border-color: #495057;
+  --bs-modal-footer-border-color: #495057;
+}
+
+/* 🌙 Custom scrollbar (Dark Mode only) */
+[data-bs-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+}
+[data-bs-theme="dark"] ::-webkit-scrollbar-track {
+  background: #343a40;
+}
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #6c757d;
+  border-radius: 4px;
+}
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+
+/* ===============================
+   🎨 Global Transitions
+================================ */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ===============================
+   🃏 Card Styles
+================================ */
+.card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+[data-bs-theme="dark"] .card:hover {
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ===============================
+   🔘 Button Styles
+================================ */
+.btn {
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ===============================
+   📊 Table Styles
+================================ */
+.table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.table thead th {
+  border-bottom: 2px solid;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.5px;
+}
+
+/* ===============================
+   📝 Form Styles
+================================ */
+.form-control {
+  border-radius: 0.5rem;
+  border: 1px solid;
+  transition: all 0.3s ease;
+}
+.form-control:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* ===============================
+   🪟 Modal Styles
+================================ */
+.modal-content {
+  border-radius: 1rem;
+  border: none;
+}
+.modal-header {
+  border-bottom: 1px solid;
+  border-radius: 1rem 1rem 0 0;
+}
+.modal-footer {
+  border-top: 1px solid;
+  border-radius: 0 0 1rem 1rem;
+}
+
+/* ===============================
+   📌 Navbar Styles
+================================ */
+.navbar {
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid;
+}
+
+/* ===============================
+   🏷️ Badge
+================================ */
+.badge {
+  font-weight: 500;
+  padding: 0.5em 0.75em;
+}
+
+/* ===============================
+   🔄 Spinner
+================================ */
+.spinner-border {
+  border-width: 0.2em;
+}
+
+/* ===============================
+   🚨 Alert
+================================ */
+.alert {
+  border-radius: 0.75rem;
+  border: none;
+}
+
+/* ===============================
+   ⬇️ Dropdown
+================================ */
+.dropdown-menu {
+  border-radius: 0.75rem;
+  border: 1px solid;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+[data-bs-theme="dark"] .dropdown-menu {
+  box-shadow: 0 0.5rem 1rem rgba(255, 255, 255, 0.1);
+}
+
+/* ===============================
+   📦 Input Group
+================================ */
+.input-group .form-control {
+  border-right: none;
+}
+.input-group .btn {
+  border-left: none;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* ===============================
+   👤 Avatar
+================================ */
+.img-fluid {
+  border-radius: 0.5rem;
+}
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bs-secondary);
+  color: var(--bs-white);
+  border-radius: 50%;
+  font-weight: 600;
+}
+
+/* ===============================
+   📱 Responsive
+================================ */
+@media (max-width: 768px) {
+  .card {
+    margin-bottom: 1rem;
+  }
+  .table-responsive {
+    border-radius: 0.5rem;
+  }
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+}
+
+/* ===============================
+   ✨ Animations
+================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* ===============================
+   ♿ Accessibility Focus
+================================ */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+/* ===============================
+   🔵 Selection
+================================ */
+::selection {
+  background-color: var(--bs-primary);
+  color: white;
+}
+::placeholder {
+  color: var(--bs-secondary);
+  opacity: 0.7;
+}
+
+/* ===============================
+   🔗 Links
+================================ */
+a {
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+a:hover {
+  color: var(--bs-primary);
+}
+
+/* ===============================
+   ⚡ Utilities
+================================ */
+.text-selection {
+  user-select: none;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.shadow-custom {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+[data-bs-theme="dark"] .shadow-custom {
+  box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
+}
+.gradient-primary {
+  background: linear-gradient(135deg, var(--bs-primary), #0b5ed7);
+}
+.gradient-secondary {
+  background: linear-gradient(135deg, var(--bs-secondary), #5c636a);
+}
+.rounded-custom {
+  border-radius: 1rem;
+}
+.gap-custom {
+  gap: 1.5rem;
+}
+.fw-medium {
+  font-weight: 500;
+}
+.fw-semibold {
+  font-weight: 600;
+}
+.text-muted-custom {
+  color: var(--bs-secondary) !important;
+}
+.bg-custom-light {
+  background-color: var(--bs-light);
+}
+[data-bs-theme="dark"] .bg-custom-light {
+  background-color: var(--bs-dark);
+}
+.border-custom {
+  border-color: var(--bs-border-color) !important;
 }

@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework_simplejwt.views import TokenRefreshView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,6 +29,13 @@ urlpatterns = [
     # path('comments/', include('comments.urls', namespace='comments')),
     # path('chats/', include('chats.urls', namespace='chats')),
     # path('followers/', include('followers.urls', namespace='followers')),
+
+
+
+    path('api/', include('pet_society.api_urls')),
+    path('api/auth/', include('users.urls')),
+    path('api/admins/', include('admins.urls', namespace='admins')),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 # Serve media files during development

@@ -6,6 +6,10 @@ import CreatePostModal from '../components/CreatePostModal';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 import '../App.css';
 
+
+
+
+
 /**
  * HomePage component
  * Displays the sidebar (categories) and the main post feed in a flex layout.
