@@ -33,7 +33,7 @@ urlpatterns = [
     
     # User authentication routes
     path('users/', include('users.urls', namespace='users')),
-    path('api/auth/', include('users.urls')),
+    path('api/auth/', include('users.api_urls')),  # Different endpoint for API auth
     path('api/admins/', include('admins.urls', namespace='admins')),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     

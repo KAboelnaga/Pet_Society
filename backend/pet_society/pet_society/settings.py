@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'posts',
     'comments',
     'followers',
+    'admins',  # Admin management app
 
 ]
 
