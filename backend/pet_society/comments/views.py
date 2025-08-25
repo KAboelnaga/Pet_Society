@@ -17,7 +17,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         queryset = Comment.objects.all()
         post_id = self.request.query_params.get('post_id', None)
         if post_id:
-            queryset = queryset.filter(post_id=post_id)
+            # Return only top-level comments for the post; replies are nested in serializer
+            queryset = queryset.filter(post_id=post_id, parent_comment__isnull=True)
         return queryset
 
     def get_serializer_class(self):
