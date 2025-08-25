@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -29,58 +29,99 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [loading, setLoading] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const { user } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   // Calculate position for stacking windows
   const windowWidth = 320;
   const windowSpacing = 10;
   const rightOffset = 20 + (position * (windowWidth + windowSpacing));
 
-  useEffect(() => {
-    if (conversation) {
-      loadMessages();
-      connectToRoom();
-    }
-
-    return () => {
-      webSocketService.disconnect();
-    };
-  }, [conversation]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async (page = 1, beforeMessageId = null) => {
     try {
-      setLoading(true);
-      const response = await chatAPI.getMessages(conversation.id);
-      setMessages(response.data.reverse());
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingOlder(true);
+      }
+      
+      const options = { 
+        page, 
+        pageSize: 50,
+        beforeMessageId 
+      };
+      
+      const response = await chatAPI.getMessages(conversation.id, options);
+      
+      // The messages are already decrypted by the backend in the 'message' field
+      const processedMessages = response.data.messages.map(msg => ({
+        ...msg,
+        body: msg.message // Use the decrypted message from the backend
+      }));
+      
+      if (page === 1) {
+        // First load - replace all messages
+        setMessages(processedMessages.reverse());
+        setCurrentPage(1);
+      } else {
+        // Loading older messages - prepend to existing messages
+        setMessages(prev => [...processedMessages.reverse(), ...prev]);
+        setCurrentPage(page);
+      }
+      
+      setHasMoreMessages(response.data.has_more);
     } catch (error) {
       console.error('Error loading messages:', error);
-      setMessages([]);
+      if (page === 1) {
+        setMessages([]);
+      }
     } finally {
-      setLoading(false);
+      if (page === 1) {
+        setLoading(false);
+      } else {
+        setLoadingOlder(false);
+      }
     }
-  };
+  }, [conversation.id]);
 
-  const connectToRoom = () => {
-    const unsubscribeMessage = webSocketService.onMessage((data) => {
-      setMessages(prev => {
-        const messageExists = prev.some(msg => msg.id === data.message_id);
-        if (messageExists) return prev;
+  const markMessagesAsRead = useCallback(async () => {
+    try {
+      await chatAPI.markAsRead(conversation.id);
+      console.log('Messages marked as read for chat:', conversation.id);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  }, [conversation.id]);
+
+  const connectToRoom = useCallback(() => {
+    const unsubscribeMessage = webSocketService.onMessage(async (data) => {
+      try {
+        const { decryptMessage } = await import('../../utils/encryption');
         
-        return [...prev, {
-          id: data.message_id,
-          body: data.message,
-          author: { username: data.username, id: data.user_id },
-          created: data.timestamp,
-        }];
-      });
+        setMessages(prev => {
+          const messageExists = prev.some(msg => msg.id === data.message_id);
+          if (messageExists) return prev;
+          
+          // Decrypt the message if it's encrypted
+          const decryptedBody = decryptMessage(data.message);
+          
+          return [...prev, {
+            id: data.message_id,
+            body: decryptedBody,
+            author: { username: data.username, id: data.user_id },
+            created: data.timestamp,
+          }];
+        });
+      } catch (error) {
+        console.error('Error handling message:', error);
+      }
     });
 
     const unsubscribeConnection = webSocketService.onConnection((status) => {
@@ -112,6 +153,96 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
       unsubscribeUserList();
       unsubscribeTyping();
     };
+  }, [conversation.name]);
+
+  useEffect(() => {
+    if (conversation) {
+      loadMessages();
+      connectToRoom();
+      markMessagesAsRead();
+      
+      // Mark chat as active when window opens
+      webSocketService.markChatActive(conversation.id);
+
+      // Add page unload handler
+      const handleUnload = () => {
+        // Don't mark chat as inactive on page refresh if it's actively open
+        if (!isMinimized) {
+          localStorage.setItem(`chat_${conversation.id}_wasActive`, 'true');
+        }
+      };
+
+      window.addEventListener('beforeunload', handleUnload);
+
+      // Mark chat as inactive when window closes
+      return () => {
+        if (!document.hidden) { // Only mark inactive if not page refresh
+          webSocketService.markChatInactive(conversation.id);
+        }
+        webSocketService.disconnect();
+        window.removeEventListener('beforeunload', handleUnload);
+      };
+    }
+  }, [conversation, loadMessages, connectToRoom, markMessagesAsRead, isMinimized]);
+
+  // Restore active state on component mount
+  useEffect(() => {
+    if (conversation?.id) {
+      const wasActive = localStorage.getItem(`chat_${conversation.id}_wasActive`);
+      if (wasActive === 'true') {
+        webSocketService.markChatActive(conversation.id);
+        localStorage.removeItem(`chat_${conversation.id}_wasActive`);
+      }
+    }
+  }, [conversation?.id]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Handle window minimize/maximize
+  useEffect(() => {
+    if (conversation?.id) {
+      if (!isMinimized) {
+        markMessagesAsRead();
+        webSocketService.markChatActive(conversation.id);
+      } else {
+        webSocketService.markChatInactive(conversation.id);
+      }
+    }
+  }, [conversation?.id, isMinimized, markMessagesAsRead]);
+
+  const loadOlderMessages = async () => {
+    if (loadingOlder || !hasMoreMessages || messages.length === 0) {
+      return;
+    }
+
+    const container = messagesContainerRef.current;
+    const scrollHeightBefore = container.scrollHeight;
+    const scrollTopBefore = container.scrollTop;
+
+    const oldestMessage = messages[0];
+    const nextPage = currentPage + 1;
+    
+    await loadMessages(nextPage, oldestMessage.id);
+
+    // Preserve scroll position after loading older messages
+    setTimeout(() => {
+      if (container) {
+        const scrollHeightAfter = container.scrollHeight;
+        const scrollHeightDifference = scrollHeightAfter - scrollHeightBefore;
+        container.scrollTop = scrollTopBefore + scrollHeightDifference;
+      }
+    }, 0);
+  };
+
+  const handleScroll = (e) => {
+    const { scrollTop } = e.target;
+    
+    // Load older messages when scrolled to the top (within 10px)
+    if (scrollTop <= 10 && hasMoreMessages && !loadingOlder && !loading) {
+      loadOlderMessages();
+    }
   };
 
   const scrollToBottom = () => {
@@ -124,6 +255,17 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
       chatAPI.sendMessage(conversation.id, message)
         .then(() => loadMessages())
         .catch(error => console.error('Error sending message:', error));
+    }
+  };
+
+  const handleSendImage = async (imageFile) => {
+    try {
+      // Send image via API since WebSocket doesn't handle file uploads well
+      await chatAPI.sendImageMessage(conversation.id, imageFile);
+      // Reload messages to show the new image
+      loadMessages();
+    } catch (error) {
+      console.error('Error sending image:', error);
     }
   };
 
@@ -302,11 +444,36 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
       <Collapse in={!isMinimized}>
         <Box sx={{ height: 464, display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
           {/* Messages */}
-          <Box sx={{ flex: 1, overflow: 'hidden', bgcolor: '#ffffff' }}>
+          <Box 
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
+            sx={{ 
+              flex: 1, 
+              overflow: 'auto', 
+              bgcolor: '#ffffff',
+              // Custom scrollbar styling
+              '&::-webkit-scrollbar': {
+                width: '6px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: '#f1f1f1',
+                borderRadius: '10px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#c1c1c1',
+                borderRadius: '10px',
+                '&:hover': {
+                  background: '#a8a8a8',
+                },
+              },
+            }}
+          >
             <MessageList
               messages={messages}
               typingUsers={typingUsers}
               loading={loading}
+              loadingOlder={loadingOlder}
+              hasMoreMessages={hasMoreMessages}
               compact={true}
             />
             <div ref={messagesEndRef} />
@@ -320,6 +487,7 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
           }}>
             <MessageInput
               onSendMessage={handleSendMessage}
+              onSendImage={handleSendImage}
               onTyping={handleTyping}
               disabled={connectionStatus !== 'connected'}
               compact={true}

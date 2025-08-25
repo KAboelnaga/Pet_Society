@@ -66,14 +66,33 @@ class GlobalWebSocketService {
       case 'new_chat_created':
         this.notifyNewChatHandlers(data);
         break;
-      case 'chat_message':
-        this.notifyMessageHandlers(data);
+      case 'chat_message_notification':
+        // Get active chats from localStorage
+        const activeChats = JSON.parse(localStorage.getItem('activeChats') || '[]');
+        const isChatActive = activeChats.includes(data.chat_id);
+        
+        // Only notify if chat is not active
+        if (!isChatActive) {
+          this.notifyMessageHandlers(data);
+        } else {
+          // If chat is active, mark messages as read
+          this.markMessageAsRead(data.chat_id);
+        }
         break;
       case 'user_invited':
         this.notifyNewChatHandlers(data);
         break;
       default:
         console.log('Unknown message type:', data.type);
+    }
+  }
+
+  async markMessageAsRead(chatId) {
+    try {
+      const { chatAPI } = await import('./api');
+      await chatAPI.markAsRead(chatId);
+    } catch (error) {
+      console.error('Error marking message as read:', error);
     }
   }
 

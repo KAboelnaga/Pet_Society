@@ -11,7 +11,6 @@ import {
   List,
   ListItem,
   ListItemAvatar,
-  ListItemText,
   Avatar,
   Chip,
   Divider,
@@ -29,10 +28,10 @@ import {
   Close as CloseIcon,
   Minimize as MinimizeIcon,
   Add as AddIcon,
-  Circle as CircleIcon,
 } from '@mui/icons-material';
 import ChatWindow from './ChatWindow';
 import { chatAPI } from '../../services/api';
+import globalWebSocketService from '../../services/globalWebSocket';
 import { useAuth } from '../../contexts/AuthContext';
 
 const MessengerWidget = () => {
@@ -50,39 +49,147 @@ const MessengerWidget = () => {
 
   useEffect(() => {
     if (user) {
-      loadConversations();
+      // First load conversations
+      loadConversations().then(() => {
+        // After loading conversations, mark active chats' messages as read
+        const activeChats = JSON.parse(localStorage.getItem('activeChats') || '[]');
+        activeChats.forEach(chatId => {
+          chatAPI.markAsRead(chatId).catch(error => {
+            console.error('Error marking messages as read:', error);
+          });
+        });
+      });
+
+      // Listen for message notifications to update conversation list
+      const unsubscribeMessage = globalWebSocketService.onMessage((data) => {
+        if (data.type === 'chat_message_notification') {
+          console.log('Updating conversation list with new message:', data);
+
+          // Update the specific conversation with the new message
+          setConversations(prev => {
+            const existingConv = prev.find(conv => conv.id === data.chat_id);
+
+            if (existingConv) {
+              // Update existing conversation
+              const updatedConversations = prev.map(conv => {
+                if (conv.id === data.chat_id) {
+                  // Check if chat is currently active
+                  const isChatActive = webSocketService.isChatActive(conv.id);
+                  
+                  // If chat is active, automatically mark message as read
+                  if (isChatActive) {
+                    chatAPI.markAsRead(conv.id).catch(error => {
+                      console.error('Error marking messages as read:', error);
+                    });
+                  }
+
+                  return {
+                    ...conv,
+                    last_message: {
+                      id: Date.now(),
+                      body: data.message,
+                      author: data.author.username,
+                      created: data.timestamp
+                    },
+                    // Only increment unread count if chat is not active
+                    unread_count: isChatActive ? 0 : (conv.unread_count || 0) + 1
+                  };
+                }
+                return conv;
+              });
+
+              // Sort by most recent message (move updated conversation to top)
+              return updatedConversations.sort((a, b) => {
+                const aTime = a.last_message?.created || a.created || '0';
+                const bTime = b.last_message?.created || b.created || '0';
+                return new Date(bTime) - new Date(aTime);
+              });
+            } else {
+              // Conversation doesn't exist yet, reload all conversations
+              console.log('Conversation not found, reloading all conversations');
+              loadConversations();
+              return prev;
+            }
+          });
+
+          // Also update unread count
+          setUnreadCount(prev => prev + 1);
+        }
+      });
+
+      // Listen for new chat notifications
+      const unsubscribeNewChat = globalWebSocketService.onNewChat((data) => {
+        console.log('New chat created, refreshing conversations:', data);
+        loadConversations();
+      });
+
+      return () => {
+        unsubscribeMessage();
+        unsubscribeNewChat();
+      };
     }
   }, [user]);
 
   const loadConversations = async () => {
     try {
       const response = await chatAPI.getChatGroups();
-      setConversations(response.data);
-      
-      // Calculate unread count (you'll need to implement this in backend)
-      const unread = response.data.reduce((count, conv) => count + (conv.unread_count || 0), 0);
+
+      // Sort conversations by latest message timestamp
+      const sortedConversations = response.data.sort((a, b) => {
+        const aTime = a.last_message?.created || a.created || '0';
+        const bTime = b.last_message?.created || b.created || '0';
+        return new Date(bTime) - new Date(aTime);
+      });
+
+      setConversations(sortedConversations);
+
+      // Calculate unread count
+      const unread = sortedConversations.reduce((count, conv) => count + (conv.unread_count || 0), 0);
       setUnreadCount(unread);
     } catch (error) {
       console.error('Error loading conversations:', error);
     }
   };
 
-  const openChatWindow = (conversation) => {
+  const openChatWindow = async (conversation) => {
     // Check if chat window is already open
     const existingWindow = chatWindows.find(window => window.id === conversation.id);
     if (existingWindow) {
-      // Focus existing window
-      return;
+      // Focus existing window and mark as not minimized
+      setChatWindows(prev =>
+        prev.map(window =>
+          window.id === conversation.id
+            ? { ...window, isMinimized: false }
+            : window
+        )
+      );
+    } else {
+      // Add new chat window
+      const newWindow = {
+        id: conversation.id,
+        conversation,
+        isMinimized: false,
+      };
+
+      setChatWindows(prev => [...prev, newWindow]);
     }
 
-    // Add new chat window
-    const newWindow = {
-      id: conversation.id,
-      conversation,
-      isMinimized: false,
-    };
-    
-    setChatWindows(prev => [...prev, newWindow]);
+    // Reset unread count for this conversation
+    setConversations(prev => prev.map(conv =>
+      conv.id === conversation.id
+        ? { ...conv, unread_count: 0 }
+        : conv
+    ));
+
+    // Update total unread count
+    setUnreadCount(prev => Math.max(0, prev - (conversation.unread_count || 0)));
+
+    // Mark messages as read via API
+    try {
+      await chatAPI.markAsRead(conversation.id);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
   };
 
   const closeChatWindow = (windowId) => {
@@ -99,7 +206,10 @@ const MessengerWidget = () => {
     );
   };
 
-  const handleStartNewChat = async () => {
+      const [errorMessage, setErrorMessage] = useState('');
+
+      const handleStartNewChat = async () => {
+          setErrorMessage(''); // Reset error message
     if (newChatUsername.trim()) {
       try {
         // Parse usernames (split by comma and clean up)
@@ -108,49 +218,101 @@ const MessengerWidget = () => {
           .map(name => name.trim())
           .filter(name => name.length > 0);
 
-        let chatData;
-
         if (usernames.length === 1) {
           // Single user = Private chat
-          chatData = {
+          const targetUsername = usernames[0];
+
+          // Check if private chat already exists with this user
+          const existingPrivateChat = conversations.find(conv => {
+            if (!conv.is_private) return false;
+
+            // Check if this user is in the members
+            const otherUser = conv.members?.find(member => member.id !== user?.id);
+            if (otherUser && otherUser.username === targetUsername) {
+              return true;
+            }
+
+            // Fallback: check invite_user field
+            if (conv.invite_user === targetUsername) {
+              return true;
+            }
+
+            // Check last message author as fallback
+            if (conv.last_message && conv.last_message.author === targetUsername) {
+              return true;
+            }
+
+            return false;
+          });
+
+          if (existingPrivateChat) {
+            // Open existing private chat instead of creating new one
+            console.log('Private chat already exists, opening existing chat');
+            openChatWindow(existingPrivateChat);
+            setNewChatUsername('');
+            setNewChatDialogOpen(false);
+            return;
+          }
+
+          // Create new private chat
+          const chatData = {
             name: `private-${Date.now()}`,
             is_private: true,
-            invite_user: usernames[0],
+            invite_user: targetUsername,
           };
+
+          const response = await chatAPI.createChatGroup(chatData);
+          const newConversation = response.data;
+
+          // Add new conversation and maintain sorting
+          setConversations(prev => {
+            const updated = [newConversation, ...prev];
+            return updated.sort((a, b) => {
+              const aTime = a.last_message?.created || a.created || '0';
+              const bTime = b.last_message?.created || b.created || '0';
+              return new Date(bTime) - new Date(aTime);
+            });
+          });
+
+          openChatWindow(newConversation);
         } else {
-          // Multiple users = Group chat
-          chatData = {
+          // Multiple users = Group chat (always create new)
+          const chatData = {
             name: `Group with ${usernames.join(', ')}`,
             is_private: false,
-            invite_users: usernames, // Send array for multiple users
+            invite_users: usernames,
           };
-        }
 
-        const response = await chatAPI.createChatGroup(chatData);
-        const newConversation = response.data;
-        setConversations(prev => [newConversation, ...prev]);
-        openChatWindow(newConversation);
+          const response = await chatAPI.createChatGroup(chatData);
+          const newConversation = response.data;
+
+          // Add new conversation and maintain sorting
+          setConversations(prev => {
+            const updated = [newConversation, ...prev];
+            return updated.sort((a, b) => {
+              const aTime = a.last_message?.created || a.created || '0';
+              const bTime = b.last_message?.created || b.created || '0';
+              return new Date(bTime) - new Date(aTime);
+            });
+          });
+
+          openChatWindow(newConversation);
+        }
 
         setNewChatUsername('');
         setNewChatDialogOpen(false);
       } catch (error) {
         console.error('Error starting new chat:', error);
-        // You can add error handling here (show toast, etc.)
+        if (error.response && error.response.data && error.response.data.error) {
+          setErrorMessage(error.response.data.error);
+        } else {
+          setErrorMessage('Failed to create chat. Please try again.');
+        }
       }
     }
   };
 
-  const formatLastSeen = (timestamp) => {
-    if (!timestamp) return 'Offline';
-    const now = new Date();
-    const lastSeen = new Date(timestamp);
-    const diffMinutes = Math.floor((now - lastSeen) / (1000 * 60));
 
-    if (diffMinutes < 1) return 'Active now';
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)}h ago`;
-    return `${Math.floor(diffMinutes / 1440)}d ago`;
-  };
 
   const getConversationName = (conversation) => {
     if (conversation.is_private) {
@@ -328,7 +490,11 @@ const MessengerWidget = () => {
                     <ListItem
                       key={conversation.id}
                       button
-                      onClick={() => openChatWindow(conversation)}
+                      onClick={() => {
+                        openChatWindow(conversation);
+                        // Hide the sidebar/drawer when clicking on a conversation
+                        setIsOpen(false);
+                      }}
                       sx={{
                         borderRadius: 2,
                         mb: 0.5,
@@ -376,25 +542,33 @@ const MessengerWidget = () => {
                           </Avatar>
                         </Badge>
                       </ListItemAvatar>
-                      <ListItemText
-                        primary={getConversationName(conversation)}
-                        secondary={
-                          conversation.last_message
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: conversation.unread_count ? 600 : 500,
+                            fontSize: '0.95rem',
+                            color: conversation.unread_count ? '#1f2937' : '#374151',
+                            mb: 0.5,
+                          }}
+                          noWrap
+                        >
+                          {getConversationName(conversation)}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: '0.85rem',
+                            color: '#6b7280',
+                            fontWeight: conversation.unread_count ? 500 : 400,
+                          }}
+                          noWrap
+                        >
+                          {conversation.last_message
                             ? `${conversation.last_message.body}`
-                            : 'Start a conversation'
-                        }
-                        primaryTypographyProps={{
-                          fontWeight: conversation.unread_count ? 600 : 500,
-                          fontSize: '0.95rem',
-                          color: conversation.unread_count ? '#1f2937' : '#374151',
-                        }}
-                        secondaryTypographyProps={{
-                          noWrap: true,
-                          fontSize: '0.85rem',
-                          color: '#6b7280',
-                          fontWeight: conversation.unread_count ? 500 : 400,
-                        }}
-                      />
+                            : 'Start a conversation'}
+                        </Typography>
+                      </Box>
                       {conversation.unread_count > 0 && (
                         <Box
                           sx={{
@@ -438,7 +612,10 @@ const MessengerWidget = () => {
       {/* New Chat Dialog */}
       <Dialog
         open={newChatDialogOpen}
-        onClose={() => setNewChatDialogOpen(false)}
+        onClose={() => {
+          setNewChatDialogOpen(false);
+          setErrorMessage(''); // Clear error when dialog closes
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -451,8 +628,12 @@ const MessengerWidget = () => {
             fullWidth
             variant="outlined"
             value={newChatUsername}
-            onChange={(e) => setNewChatUsername(e.target.value)}
-            helperText="Enter username for private chat, or multiple usernames separated by commas for group chat (e.g., 'alice, bob, khalifa')"
+            onChange={(e) => {
+              setNewChatUsername(e.target.value);
+              if (errorMessage) setErrorMessage(''); // Clear error when user types
+            }}
+            helperText={errorMessage || "Enter username for private chat, or multiple usernames separated by commas for group chat (e.g., 'alice, bob, khalifa')"}
+            error={!!errorMessage}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleStartNewChat();
@@ -461,7 +642,10 @@ const MessengerWidget = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setNewChatDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => {
+            setNewChatDialogOpen(false);
+            setErrorMessage(''); // Clear error when canceling
+          }}>Cancel</Button>
           <Button
             onClick={handleStartNewChat}
             variant="contained"

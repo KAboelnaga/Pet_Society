@@ -3,6 +3,7 @@ import { chatAPI } from '../services/api';
 import webSocketService from '../services/websocket';
 import globalWebSocketService from '../services/globalWebSocket';
 import { useAuth } from './AuthContext';
+import { decryptMessage } from '../utils/encryption';
 
 const ChatContext = createContext();
 
@@ -21,6 +22,29 @@ export const ChatProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   
   const { user, isAuthenticated } = useAuth();
+
+  // Function to decrypt messages in a conversation
+  const decryptConversation = useCallback((conversation) => {
+    if (conversation.messages) {
+      return {
+        ...conversation,
+        messages: conversation.messages.map(msg => ({
+          ...msg,
+          body: decryptMessage(msg.body)
+        }))
+      };
+    }
+    if (conversation.last_message) {
+      return {
+        ...conversation,
+        last_message: {
+          ...conversation.last_message,
+          body: decryptMessage(conversation.last_message.body)
+        }
+      };
+    }
+    return conversation;
+  }, []);
 
   // Load conversations and setup global WebSocket when user is authenticated
   useEffect(() => {
@@ -54,32 +78,62 @@ export const ChatProvider = ({ children }) => {
         }
       });
 
+      // Listen for message notifications (for desktop notifications only)
+      const unsubscribeMessage = globalWebSocketService.onMessage((data) => {
+        console.log('Message notification:', data);
+
+        if (data.type === 'chat_message_notification') {
+          // Show notification if chat is not currently active
+          const isActiveChat = activeChats.some(chat =>
+            chat.id === data.chat_id && !chat.isMinimized
+          );
+
+          if (!isActiveChat && window.showChatNotification) {
+            const conversation = conversations.find(c => c.id === data.chat_id) || {
+              id: data.chat_id,
+              name: data.chat_name,
+              is_private: data.is_private
+            };
+
+            window.showChatNotification(
+              {
+                author: data.author,
+                body: data.message,
+                created: data.timestamp
+              },
+              conversation
+            );
+          }
+        }
+      });
+
       return () => {
         unsubscribeNewChat();
+        unsubscribeMessage();
         globalWebSocketService.disconnect();
       };
     }
   }, [isAuthenticated, user]);
 
-  const loadConversations = async () => {
+    const loadConversations = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await chatAPI.getChatGroups();
-      setConversations(response.data);
+      const decryptedConversations = response.data.map(decryptConversation);
+      setConversations(decryptedConversations);
       
-      // Calculate total unread count
-      const totalUnread = response.data.reduce((count, conv) => {
-        return count + (conv.unread_count || 0);
-      }, 0);
+      // Update unread count
+      const totalUnread = decryptedConversations.reduce(
+        (sum, conv) => sum + (conv.unread_count || 0),
+        0
+      );
       setUnreadCount(totalUnread);
     } catch (error) {
       console.error('Error loading conversations:', error);
-      // Fallback to demo data if API fails
-      setConversations([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [decryptConversation]);
 
   const createConversation = async (conversationData) => {
     try {

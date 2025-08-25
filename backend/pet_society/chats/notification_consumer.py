@@ -72,8 +72,10 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     # Handle new message notification (for chats user is not currently viewing)
     async def chat_message_notification(self, event):
         await self.send(text_data=json.dumps({
-            'type': 'chat_message',
+            'type': 'chat_message_notification',
             'chat_id': event['chat_id'],
+            'chat_name': event['chat_name'],
+            'is_private': event['is_private'],
             'message': event['message'],
             'author': event['author'],
             'timestamp': event['timestamp']

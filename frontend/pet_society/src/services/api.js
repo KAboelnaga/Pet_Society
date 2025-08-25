@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_CONFIG } from '../config/api';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Configure axios defaults
 axios.defaults.withCredentials = true;
@@ -85,11 +86,38 @@ export const chatAPI = {
   leaveChatGroup: (groupId) => api.post(`/chats/groups/${groupId}/leave/`),
   
   // Get messages for a chat group
-  getMessages: (groupId) => api.get(`/chats/groups/${groupId}/messages/`),
+  getMessages: (groupId, options = {}) => {
+    const { page = 1, pageSize = 50, beforeMessageId } = options;
+    const params = new URLSearchParams();
+    
+    params.append('page', page.toString());
+    params.append('page_size', pageSize.toString());
+    
+    if (beforeMessageId) {
+      params.append('before_message_id', beforeMessageId.toString());
+    }
+    
+    return api.get(`/chats/groups/${groupId}/messages/?${params.toString()}`);
+  },
   
   // Send a message (fallback for non-WebSocket)
   sendMessage: (groupId, message) =>
     api.post(`/chats/groups/${groupId}/send_message/`, { body: message }),
+
+  // Send an image message
+  sendImageMessage: (groupId, imageFile) => {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    return api.post(`/chats/groups/${groupId}/send_message/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  // Mark messages as read
+  markAsRead: (groupId) =>
+    api.post(`/chats/groups/${groupId}/mark_as_read/`),
 
   // Invite user to group
   inviteUser: (groupId, username) =>

@@ -1,3 +1,5 @@
+import { decryptMessage } from '../utils/encryption';
+
 class WebSocketService {
   constructor() {
     this.socket = null;
@@ -9,6 +11,47 @@ class WebSocketService {
     this.connectionHandlers = new Set();
     this.typingHandlers = new Set();
     this.userListHandlers = new Set();
+    
+    // Initialize active chats from localStorage
+    this.activeChats = new Set(
+      JSON.parse(localStorage.getItem('activeChats') || '[]')
+    );
+  }
+
+  // Method to mark a chat as active
+  markChatActive(chatId) {
+    this.activeChats.add(chatId);
+    this._saveActiveChats();
+    // Mark messages as read when chat becomes active
+    this._markMessagesAsRead(chatId);
+  }
+
+  // Method to mark a chat as inactive
+  markChatInactive(chatId) {
+    this.activeChats.delete(chatId);
+    this._saveActiveChats();
+  }
+
+  // Check if a chat is active
+  isChatActive(chatId) {
+    return this.activeChats.has(chatId);
+  }
+
+  // Private method to save active chats to localStorage
+  _saveActiveChats() {
+    localStorage.setItem('activeChats', 
+      JSON.stringify(Array.from(this.activeChats))
+    );
+  }
+
+  // Private method to mark messages as read
+  async _markMessagesAsRead(chatId) {
+    try {
+      const { chatAPI } = await import('./api');
+      await chatAPI.markAsRead(chatId);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
   }
 
   connect(roomName) {
@@ -79,6 +122,7 @@ class WebSocketService {
   handleMessage(data) {
     switch (data.type) {
       case 'chat_message':
+        // The message should already be decrypted by the backend
         this.notifyMessageHandlers(data);
         break;
       case 'typing_indicator':
@@ -197,5 +241,8 @@ class WebSocketService {
 
 // Create a singleton instance
 const webSocketService = new WebSocketService();
+
+// Expose the service globally for cross-component communication
+window.webSocketService = webSocketService;
 
 export default webSocketService;

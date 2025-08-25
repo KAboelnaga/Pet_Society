@@ -8,8 +8,16 @@ import {
   Chip,
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
+import Message from './Message';
 
-const MessageList = ({ messages, typingUsers, loading, compact = false }) => {
+const MessageList = ({ 
+  messages, 
+  typingUsers, 
+  loading, 
+  loadingOlder = false, 
+  hasMoreMessages = true, 
+  compact = false 
+}) => {
   const { user } = useAuth();
   const formatMessageTime = (timestamp) => {
     const date = new Date(timestamp);
@@ -54,14 +62,45 @@ const MessageList = ({ messages, typingUsers, loading, compact = false }) => {
   }
 
   return (
-    <Box sx={{
-      flex: 1,
-      overflow: 'auto',
-      p: compact ? 0.5 : 1,
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
-      {messages.length === 0 ? (
+    <Box 
+      sx={{
+        flex: 1,
+        p: compact ? 0.5 : 1,
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100%',
+      }}
+    >
+      {/* Loading older messages indicator */}
+      {loadingOlder && (
+        <Box 
+          display="flex" 
+          justifyContent="center" 
+          alignItems="center"
+          py={2}
+        >
+          <CircularProgress size={20} />
+          <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
+            Loading older messages...
+          </Typography>
+        </Box>
+      )}
+      
+      {/* No more messages indicator */}
+      {!hasMoreMessages && messages.length > 0 && (
+        <Box 
+          display="flex" 
+          justifyContent="center" 
+          alignItems="center"
+          py={1}
+        >
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+            Beginning of conversation
+          </Typography>
+        </Box>
+      )}
+      
+      {messages.length === 0 && !loading ? (
         <Box 
           display="flex" 
           justifyContent="center" 
@@ -102,95 +141,11 @@ const MessageList = ({ messages, typingUsers, loading, compact = false }) => {
               )}
               
               {/* Message */}
-              <Box sx={{
-                display: 'flex',
-                mb: compact ? 0.5 : 1,
-                justifyContent: message.author.id === user?.id ? 'flex-end' : 'flex-start',
-                alignItems: 'flex-end',
-                px: compact ? 1 : 2,
-              }}>
-                {/* Avatar for other users (left side) */}
-                {message.author.id !== user?.id && (
-                  <Avatar
-                    sx={{
-                      width: compact ? 24 : 28,
-                      height: compact ? 24 : 28,
-                      mr: 1,
-                      fontSize: compact ? '0.75rem' : '0.875rem'
-                    }}
-                  >
-                    {message.author.username.charAt(0).toUpperCase()}
-                  </Avatar>
-                )}
-
-                {/* Message Bubble */}
-                <Box sx={{
-                  maxWidth: '70%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: message.author.id === user?.id ? 'flex-end' : 'flex-start',
-                }}>
-                  {/* Message Content */}
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: compact ? 1 : 1.5,
-                      backgroundColor: message.author.id === user?.id
-                        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                        : '#f1f3f4',
-                      color: message.author.id === user?.id ? 'white' : 'text.primary',
-                      borderRadius: message.author.id === user?.id
-                        ? '18px 18px 4px 18px'  // Sent message (right)
-                        : '18px 18px 18px 4px', // Received message (left)
-                      position: 'relative',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                      background: message.author.id === user?.id
-                        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                        : '#f1f3f4',
-                    }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        wordBreak: 'break-word',
-                        fontSize: compact ? '0.875rem' : '0.95rem',
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {message.body}
-                    </Typography>
-                  </Paper>
-
-                  {/* Timestamp */}
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                      fontSize: '0.75rem',
-                      mt: 0.5,
-                      mx: 1,
-                      opacity: 0.7,
-                    }}
-                  >
-                    {formatMessageTime(message.created)}
-                  </Typography>
-                </Box>
-
-                {/* Avatar for current user (right side) */}
-                {message.author.id === user?.id && (
-                  <Avatar
-                    sx={{
-                      width: compact ? 24 : 28,
-                      height: compact ? 24 : 28,
-                      ml: 1,
-                      fontSize: compact ? '0.75rem' : '0.875rem',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    }}
-                  >
-                    {message.author.username.charAt(0).toUpperCase()}
-                  </Avatar>
-                )}
-              </Box>
+              <Message
+                message={message}
+                isOwnMessage={message.author.id === user?.id}
+                formatMessageTime={formatMessageTime}
+              />
             </React.Fragment>
           ))}
           

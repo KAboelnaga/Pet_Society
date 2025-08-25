@@ -26,5 +26,9 @@ class GroupMessageAdmin(admin.ModelAdmin):
     readonly_fields = ['created']
 
     def body_preview(self, obj):
-        return obj.body[:50] + '...' if len(obj.body) > 50 else obj.body
+        from .encryption import decrypt_message
+        decrypted = decrypt_message(obj.encrypted_body) if obj.is_encrypted else obj.encrypted_body
+        if decrypted:
+            return decrypted[:50] + '...' if len(decrypted) > 50 else decrypted
+        return '[Encrypted]'
     body_preview.short_description = 'Message'

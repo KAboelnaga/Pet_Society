@@ -1,8 +1,10 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from channels.layers import get_channel_layer
 from django.contrib.auth import get_user_model
 from .models import ChatGroup, GroupMessage
+from .encryption import encrypt_message
 
 User = get_user_model()
 
@@ -59,20 +61,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 message = text_data_json['message']
                 
                 # Save message to database
-                group_message = await self.save_message(message)
+                group_message, original_message = await self.save_message(message)
                 
                 # Send message to room group
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
                         'type': 'chat_message',
-                        'message': message,
+                        'message': original_message,  # Send the original (decrypted) message
                         'username': self.user.username,
                         'user_id': self.user.id,
                         'timestamp': group_message.created.isoformat(),
                         'message_id': group_message.id,
                     }
                 )
+
+                # Send global notifications to all chat members
+                await self.send_message_notifications(group_message, message)
             elif message_type == 'typing':
                 # Handle typing indicator
                 await self.channel_layer.group_send(
@@ -123,17 +128,79 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def save_message(self, message):
-        chat_group, created = ChatGroup.objects.get_or_create(name=self.room_name)
+        chat_group, _ = ChatGroup.objects.get_or_create(name=self.room_name)
+        
+        # Encrypt the message
+        encrypted_body = encrypt_message(message)
+        if not encrypted_body:
+            # If encryption fails, store the original message
+            encrypted_body = message
+            is_encrypted = False
+        else:
+            is_encrypted = True
+        
         group_message = GroupMessage.objects.create(
             group=chat_group,
             author=self.user,
-            body=message
+            encrypted_body=encrypted_body,
+            is_encrypted=is_encrypted
         )
-        return group_message
+        return group_message, message  # Return both the message object and original message
+
+    async def send_message_notifications(self, group_message, message):
+        """Send message notifications to all chat members who are not currently in this room"""
+        try:
+            # Get chat group and all its members
+            chat_group = await self.get_chat_group()
+            if not chat_group:
+                return
+
+            member_ids = await self.get_chat_members(chat_group.id)
+
+            # Send notification to each member (except the sender)
+            for member_id in member_ids:
+                if member_id != self.user.id:
+                    # Check if this user has already read this message
+                    # (This is a new message, so it won't be read yet, but we keep this for future use)
+                    await self.channel_layer.group_send(
+                        f'user_{member_id}',
+                        {
+                            'type': 'chat_message_notification',
+                            'chat_id': chat_group.id,
+                            'chat_name': chat_group.name,
+                            'is_private': chat_group.is_private,
+                            'message': message,
+                            'message_id': group_message.id,
+                            'author': {
+                                'id': self.user.id,
+                                'username': self.user.username,
+                                'first_name': self.user.first_name,
+                                'last_name': self.user.last_name,
+                            },
+                            'timestamp': group_message.created.isoformat(),
+                        }
+                    )
+        except Exception as e:
+            print(f"Error sending message notifications: {e}")
+
+    @database_sync_to_async
+    def get_chat_group(self):
+        try:
+            return ChatGroup.objects.get(name=self.room_name)
+        except ChatGroup.DoesNotExist:
+            return None
+
+    @database_sync_to_async
+    def get_chat_members(self, chat_id):
+        try:
+            chat = ChatGroup.objects.get(id=chat_id)
+            return list(chat.members.values_list('id', flat=True))
+        except ChatGroup.DoesNotExist:
+            return []
 
     @database_sync_to_async
     def add_user_to_room(self):
-        chat_group, created = ChatGroup.objects.get_or_create(name=self.room_name)
+        chat_group, _ = ChatGroup.objects.get_or_create(name=self.room_name)
         chat_group.users_online.add(self.user)
         if not chat_group.members.filter(id=self.user.id).exists():
             chat_group.members.add(self.user)
