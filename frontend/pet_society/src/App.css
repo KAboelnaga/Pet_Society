@@ -484,6 +484,23 @@ body, html, #root {
   background: #5a6268;
 }
 
+.reply-mode-indicator {
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reply-mode-indicator p {
+  margin: 0;
+  color: #1976d2;
+  font-weight: 500;
+}
+
 .replies {
   margin-top: 12px;
   margin-left: 20px;

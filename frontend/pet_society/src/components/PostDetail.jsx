@@ -11,12 +11,7 @@ const PostDetail = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   
-  console.log('PostDetail component - id from params:', id);
-  console.log('PostDetail component - id type:', typeof id);
-  
-  console.log('PostDetail rendered with id:', id);
-  console.log('User:', user);
-  console.log('Is authenticated:', isAuthenticated);
+
   
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -30,10 +25,6 @@ const PostDetail = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
-    console.log('PostDetail useEffect triggered with id:', id);
-    console.log('API base URL:', api.defaults.baseURL);
-    console.log('Auth token:', localStorage.getItem('token'));
-    
     // Test API connection first
     testApiConnection();
     
@@ -45,64 +36,44 @@ const PostDetail = () => {
   }, [id, isAuthenticated]);
 
   const testApiConnection = async () => {
-    console.log('Testing API connection...');
     try {
-      const response = await api.get('posts/');
-      console.log('API connection test successful:', response.data);
-      console.log('Posts response structure:', {
-        hasResults: !!response.data.results,
-        isArray: Array.isArray(response.data),
-        type: typeof response.data
-      });
+      await api.get('posts/');
     } catch (error) {
       console.error('API connection test failed:', error);
-      console.error('Error response:', error.response);
     }
   };
 
   const fetchPost = async () => {
-    console.log('Fetching post with id:', id);
     try {
       const response = await api.get(`posts/${id}/`);
-      console.log('Post fetch response:', response.data);
       setPost(response.data);
       setLikesCount(response.data.likes_count || 0);
     } catch (error) {
       console.error('Error fetching post:', error);
-      console.error('Error details:', error.response?.data);
       setError('Failed to load post');
     }
   };
 
   const fetchComments = async () => {
-    console.log('Fetching comments for post:', id);
     try {
       const response = await api.get(`comments/?post_id=${id}`);
-      console.log('Comments fetch response:', response.data);
-      console.log('Comments response type:', typeof response.data);
-      console.log('Is array?', Array.isArray(response.data));
       
       // Handle paginated response
       let commentsData = [];
       if (response.data && response.data.results) {
         // Paginated response
         commentsData = response.data.results;
-        console.log('Using paginated results:', commentsData);
       } else if (Array.isArray(response.data)) {
         // Direct array response
         commentsData = response.data;
-        console.log('Using direct array:', commentsData);
       } else {
         // Fallback to empty array
         commentsData = [];
-        console.log('Using fallback empty array');
       }
       
-      console.log('Final comments data:', commentsData);
       setComments(commentsData);
     } catch (error) {
       console.error('Error fetching comments:', error);
-      console.error('Error details:', error.response?.data);
       // Set empty array on error
       setComments([]);
     } finally {
@@ -111,14 +82,11 @@ const PostDetail = () => {
   };
 
   const fetchLikeStatus = async () => {
-    console.log('Fetching like status for post:', id);
     try {
       const response = await api.get(`posts/${id}/user_like_status/`);
-      console.log('Like status response:', response.data);
       setIsLiked(response.data.is_liked);
     } catch (error) {
       console.error('Error fetching like status:', error);
-      console.error('Error details:', error.response?.data);
     }
   };
 
@@ -139,33 +107,29 @@ const PostDetail = () => {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    console.log('Comment submit triggered');
-    console.log('New comment content:', newComment);
-    console.log('Post ID:', id);
-    console.log('User:', user);
-    console.log('Is authenticated:', isAuthenticated);
+    e.stopPropagation(); // Prevent event bubbling
+    
+    // Guard against accidental comment submission when replying
+    if (replyTo) {
+      return;
+    }
     
     if (!isAuthenticated) {
-      console.log('User not authenticated, cannot post comment');
       return;
     }
     
     if (!newComment.trim()) {
-      console.log('Comment is empty, returning');
       return;
     }
 
     try {
-      console.log('Sending comment to API...');
       const response = await api.post('comments/', {
         content: newComment,
         post: id
       });
       
-      console.log('Comment API response:', response.data);
-      
-      // Add new comment to the beginning of the list
-      const newComments = [response.data, ...(Array.isArray(comments) ? comments : [])];
+      // Add new comment to the end of the list (since we now show oldest first)
+      const newComments = [...(Array.isArray(comments) ? comments : []), response.data];
       setComments(newComments);
       setNewComment('');
       
@@ -174,45 +138,46 @@ const PostDetail = () => {
         ...prev,
         comments_count: (prev.comments_count || 0) + 1
       }));
-      
-      console.log('Comment added successfully');
     } catch (error) {
       console.error('Error posting comment:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      console.error('Full error details:', JSON.stringify(error.response?.data, null, 2));
     }
   };
 
   const handleReplySubmit = async (e) => {
     e.preventDefault();
-    console.log('Reply submit triggered');
-    console.log('Reply content:', replyContent);
-    console.log('Reply to comment ID:', replyTo?.id);
-    console.log('Post ID:', id);
-    console.log('User:', user);
-    console.log('Is authenticated:', isAuthenticated);
+    e.stopPropagation(); // Prevent event bubbling
     
     if (!isAuthenticated) {
-      console.log('User not authenticated, cannot post reply');
+      return;
+    }
+    
+    if (!replyTo) {
       return;
     }
     
     if (!replyContent.trim()) {
-      console.log('Reply is empty, returning');
       return;
     }
 
     try {
-      console.log('Sending reply to API...');
       const response = await api.post(`comments/${replyTo.id}/reply/`, {
         content: replyContent
       });
       
-      console.log('Reply API response:', response.data);
+      // Update the comments state to include the new reply
+      setComments(prevComments => {
+        const updatedComments = prevComments.map(comment => {
+          if (comment.id === replyTo.id) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), response.data]
+            };
+          }
+          return comment;
+        });
+        return updatedComments;
+      });
       
-      // Refresh comments to show the new reply
-      fetchComments();
       setReplyTo(null);
       setReplyContent('');
       
@@ -221,25 +186,34 @@ const PostDetail = () => {
         ...prev,
         comments_count: (prev.comments_count || 0) + 1
       }));
-      
-      console.log('Reply added successfully');
     } catch (error) {
       console.error('Error posting reply:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      console.error('Full error details:', JSON.stringify(error.response?.data, null, 2));
     }
   };
 
   const handleDeleteComment = async (commentId, isReply = false) => {
-    console.log('Deleting comment/reply:', commentId, 'isReply:', isReply);
-    
     try {
       await api.delete(`comments/${commentId}/`);
-      console.log('Comment/reply deleted successfully');
       
-      // Refresh comments to update the UI
-      fetchComments();
+      if (isReply) {
+        // Delete reply - update the specific comment's replies
+        setComments(prevComments => {
+          return prevComments.map(comment => {
+            if (comment.replies && comment.replies.length > 0) {
+              return {
+                ...comment,
+                replies: comment.replies.filter(reply => reply.id !== commentId)
+              };
+            }
+            return comment;
+          });
+        });
+      } else {
+        // Delete comment - remove it from the comments list
+        setComments(prevComments => {
+          return prevComments.filter(comment => comment.id !== commentId);
+        });
+      }
       
       // Update post comments count
       setPost(prev => ({
@@ -251,7 +225,6 @@ const PostDetail = () => {
       setDeleteConfirm(null);
     } catch (error) {
       console.error('Error deleting comment/reply:', error);
-      console.error('Error response:', error.response?.data);
       alert('Failed to delete comment. Please try again.');
     }
   };
@@ -345,7 +318,7 @@ const PostDetail = () => {
         <h3>Comments</h3>
         
         {/* Add comment form */}
-        {isAuthenticated && (
+        {isAuthenticated && !replyTo && (
           <form onSubmit={handleCommentSubmit} className="comment-form">
             <textarea
               value={newComment}
@@ -357,11 +330,26 @@ const PostDetail = () => {
             <button 
               type="submit" 
               className="comment-submit-btn"
-              onClick={() => console.log('Comment button clicked')}
             >
               Post Comment
             </button>
           </form>
+        )}
+        
+        {/* Reply mode indicator */}
+        {isAuthenticated && replyTo && (
+          <div className="reply-mode-indicator">
+            <p>Replying to {replyTo.author.username}'s comment</p>
+            <button
+              onClick={() => {
+                setReplyTo(null);
+                setReplyContent('');
+              }}
+              className="cancel-reply-btn"
+            >
+              Cancel Reply
+            </button>
+          </div>
         )}
 
         {/* Comments list */}
@@ -396,7 +384,11 @@ const PostDetail = () => {
                 {/* Reply button */}
                 {isAuthenticated && (
                   <button
-                    onClick={() => setReplyTo(comment)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setReplyTo(comment);
+                    }}
                     className="reply-button"
                   >
                     Reply
@@ -417,7 +409,6 @@ const PostDetail = () => {
                       <button 
                         type="submit" 
                         className="reply-submit-btn"
-                        onClick={() => console.log('Reply button clicked')}
                       >
                         Reply
                       </button>

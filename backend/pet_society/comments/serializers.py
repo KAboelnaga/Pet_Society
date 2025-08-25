@@ -39,5 +39,5 @@ class CommentDetailSerializer(serializers.ModelSerializer):
 
     def get_replies(self, obj):
         """Get nested replies for this comment"""
-        replies = obj.replies.all()
+        replies = obj.replies.all().order_by('created_at')
         return CommentSerializer(replies, many=True).data
