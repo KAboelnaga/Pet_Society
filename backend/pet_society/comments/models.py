@@ -20,10 +20,10 @@ class Comment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['created_at']
         indexes = [
-            models.Index(fields=['post', '-created_at']),
-            models.Index(fields=['author', '-created_at']),
+            models.Index(fields=['post', 'created_at']),
+            models.Index(fields=['author', 'created_at']),
         ]
 
     def __str__(self):
