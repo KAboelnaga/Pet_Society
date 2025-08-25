@@ -22,18 +22,18 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # Main API routes
-    path('api/', include('pet_society.api_urls')),
-    
     # Chat functionality (core feature)
     path('api/chats/', include('chats.api_urls')),
     path('chats/', include('chats.urls')),
     
-    # Main branch routes
-    path('users/', include('users.urls', namespace='users')),
-    path('posts/', include('posts.urls', namespace='posts')),
-    path('comments/', include('comments.urls', namespace='comments')),
-    path('followers/', include('followers.urls', namespace='followers')),
+    # Main API routes (includes posts and comments)
+    path('api/', include('pet_society.api_urls')),
+    
+    # User authentication routes
+    path('users/', include('users.urls')),
+    
+    # Placeholder for followers (when implemented)
+    path('followers/', include('followers.urls')),
 ]
 
 # Serve media files during development

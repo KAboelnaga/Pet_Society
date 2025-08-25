@@ -60,7 +60,16 @@ class WebSocketService {
     }
 
     this.roomName = roomName;
-    const wsUrl = `ws://localhost:8000/ws/chat/${roomName}/`;
+    
+    // Get auth token for WebSocket authentication
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No auth token found for WebSocket connection');
+      this.notifyConnectionHandlers('auth_error');
+      return;
+    }
+    
+    const wsUrl = `ws://localhost:8000/ws/chat/${roomName}/?token=${token}`;
 
     console.log('Attempting to connect to WebSocket:', wsUrl);
 

@@ -17,7 +17,15 @@ class GlobalWebSocketService {
     }
 
     this.user = user;
-    const wsUrl = `ws://localhost:8000/ws/notifications/${user.id}/`;
+    
+    // Get auth token for WebSocket authentication
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No auth token found for WebSocket connection');
+      return;
+    }
+    
+    const wsUrl = `ws://localhost:8000/ws/notifications/${user.id}/?token=${token}`;
     
     try {
       this.socket = new WebSocket(wsUrl);
@@ -109,9 +117,12 @@ class GlobalWebSocketService {
 
   // Event handler management
   onMessage(handler) {
+    console.log('Adding message handler, total handlers:', this.messageHandlers.length + 1);
     this.messageHandlers.push(handler);
     return () => {
+      console.log('Removing message handler, total handlers before:', this.messageHandlers.length);
       this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
+      console.log('Total handlers after:', this.messageHandlers.length);
     };
   }
 
@@ -130,6 +141,7 @@ class GlobalWebSocketService {
   }
 
   notifyMessageHandlers(data) {
+    console.log(`Notifying ${this.messageHandlers.length} message handlers with:`, data);
     this.messageHandlers.forEach(handler => {
       try {
         handler(data);
@@ -160,7 +172,8 @@ class GlobalWebSocketService {
   }
 
   disconnect() {
-    if (this.socket) {
+    if (this.socket && this.isConnected) {
+      console.log('Disconnecting WebSocket...');
       this.socket.close();
       this.socket = null;
       this.isConnected = false;

@@ -39,7 +39,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close(code=4000)  # Custom close code for general error
 
     async def disconnect(self, close_code):
-        if hasattr(self, 'room_group_name'):
+        if hasattr(self, 'room_group_name') and self.user.is_authenticated:
             # Remove user from online users
             await self.remove_user_from_room()
 
@@ -208,8 +208,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def remove_user_from_room(self):
         try:
-            chat_group = ChatGroup.objects.get(name=self.room_name)
-            chat_group.users_online.remove(self.user)
+            if self.user.is_authenticated:
+                chat_group = ChatGroup.objects.get(name=self.room_name)
+                chat_group.users_online.remove(self.user)
         except ChatGroup.DoesNotExist:
             pass
 

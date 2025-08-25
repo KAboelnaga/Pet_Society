@@ -32,18 +32,18 @@ import {
 import ChatWindow from './ChatWindow';
 import { chatAPI } from '../../services/api';
 import globalWebSocketService from '../../services/globalWebSocket';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { useChat } from '../../contexts/ChatContext';
 
 const MessengerWidget = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [chatWindows, setChatWindows] = useState([]);
   const [conversations, setConversations] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isMinimized, setIsMinimized] = useState(false);
   const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
   const [newChatUsername, setNewChatUsername] = useState('');
   
   const { user } = useAuth();
+  const { isMessengerOpen, toggleMessenger } = useChat();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -60,71 +60,13 @@ const MessengerWidget = () => {
         });
       });
 
-      // Listen for message notifications to update conversation list
-      const unsubscribeMessage = globalWebSocketService.onMessage((data) => {
-        if (data.type === 'chat_message_notification') {
-          console.log('Updating conversation list with new message:', data);
-
-          // Update the specific conversation with the new message
-          setConversations(prev => {
-            const existingConv = prev.find(conv => conv.id === data.chat_id);
-
-            if (existingConv) {
-              // Update existing conversation
-              const updatedConversations = prev.map(conv => {
-                if (conv.id === data.chat_id) {
-                  // Check if chat is currently active
-                  const isChatActive = webSocketService.isChatActive(conv.id);
-                  
-                  // If chat is active, automatically mark message as read
-                  if (isChatActive) {
-                    chatAPI.markAsRead(conv.id).catch(error => {
-                      console.error('Error marking messages as read:', error);
-                    });
-                  }
-
-                  return {
-                    ...conv,
-                    last_message: {
-                      id: Date.now(),
-                      body: data.message,
-                      author: data.author.username,
-                      created: data.timestamp
-                    },
-                    // Only increment unread count if chat is not active
-                    unread_count: isChatActive ? 0 : (conv.unread_count || 0) + 1
-                  };
-                }
-                return conv;
-              });
-
-              // Sort by most recent message (move updated conversation to top)
-              return updatedConversations.sort((a, b) => {
-                const aTime = a.last_message?.created || a.created || '0';
-                const bTime = b.last_message?.created || b.created || '0';
-                return new Date(bTime) - new Date(aTime);
-              });
-            } else {
-              // Conversation doesn't exist yet, reload all conversations
-              console.log('Conversation not found, reloading all conversations');
-              loadConversations();
-              return prev;
-            }
-          });
-
-          // Also update unread count
-          setUnreadCount(prev => prev + 1);
-        }
-      });
-
-      // Listen for new chat notifications
+      // Listen for new chat notifications only
       const unsubscribeNewChat = globalWebSocketService.onNewChat((data) => {
-        console.log('New chat created, refreshing conversations:', data);
+        console.log('MessengerWidget: New chat created, refreshing conversations:', data);
         loadConversations();
       });
 
       return () => {
-        unsubscribeMessage();
         unsubscribeNewChat();
       };
     }
@@ -133,9 +75,20 @@ const MessengerWidget = () => {
   const loadConversations = async () => {
     try {
       const response = await chatAPI.getChatGroups();
+      console.log('Chat groups response:', response.data);
+
+      // Handle response data - check if it's paginated or direct array
+      const conversationsData = response.data.results || response.data;
+      
+      // Ensure conversationsData is an array
+      if (!Array.isArray(conversationsData)) {
+        console.error('Conversations data is not an array:', conversationsData);
+        setConversations([]);
+        return;
+      }
 
       // Sort conversations by latest message timestamp
-      const sortedConversations = response.data.sort((a, b) => {
+      const sortedConversations = conversationsData.sort((a, b) => {
         const aTime = a.last_message?.created || a.created || '0';
         const bTime = b.last_message?.created || b.created || '0';
         return new Date(bTime) - new Date(aTime);
@@ -143,9 +96,7 @@ const MessengerWidget = () => {
 
       setConversations(sortedConversations);
 
-      // Calculate unread count
-      const unread = sortedConversations.reduce((count, conv) => count + (conv.unread_count || 0), 0);
-      setUnreadCount(unread);
+      // Calculate unread count is now handled by ChatContext
     } catch (error) {
       console.error('Error loading conversations:', error);
     }
@@ -181,8 +132,7 @@ const MessengerWidget = () => {
         : conv
     ));
 
-    // Update total unread count
-    setUnreadCount(prev => Math.max(0, prev - (conversation.unread_count || 0)));
+    // Unread count is now handled by ChatContext via loadConversations
 
     // Mark messages as read via API
     try {
@@ -365,42 +315,11 @@ const MessengerWidget = () => {
 
   return (
     <>
-      {/* Floating Chat Button */}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          zIndex: 1000,
-        }}
-      >
-        <Badge badgeContent={unreadCount} color="error" max={99}>
-          <Fab
-            color="primary"
-            onClick={() => setIsOpen(true)}
-            sx={{
-              width: 56,
-              height: 56,
-              background: 'linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #7c3aed 0%, #e11d48 50%, #f59e0b 100%)',
-                transform: 'scale(1.05)',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
-              },
-              transition: 'all 0.2s ease-in-out',
-            }}
-          >
-            <ChatIcon sx={{ fontSize: 24 }} />
-          </Fab>
-        </Badge>
-      </Box>
-
       {/* Chat Drawer/Modal */}
       <Drawer
         anchor="right"
-        open={isOpen}
-        onClose={() => setIsOpen(false)}
+        open={isMessengerOpen}
+        onClose={toggleMessenger}
         sx={{
           '& .MuiDrawer-paper': {
             width: isMobile ? '100%' : 380,
@@ -439,7 +358,7 @@ const MessengerWidget = () => {
               </IconButton>
               <IconButton
                 color="inherit"
-                onClick={() => setIsOpen(false)}
+                onClick={toggleMessenger}
                 size="small"
                 sx={{
                   '&:hover': {
@@ -489,11 +408,11 @@ const MessengerWidget = () => {
                   {conversations.map((conversation) => (
                     <ListItem
                       key={conversation.id}
-                      button
+                      component="button"
                       onClick={() => {
                         openChatWindow(conversation);
                         // Hide the sidebar/drawer when clicking on a conversation
-                        setIsOpen(false);
+                        toggleMessenger();
                       }}
                       sx={{
                         borderRadius: 2,

@@ -1,6 +1,6 @@
 import { Box, AppBar, Toolbar, Typography, Button } from '@mui/material';
 import { Logout as LogoutIcon } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const ChatContainer = () => {
   const { logout, user } = useAuth();

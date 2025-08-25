@@ -7,7 +7,7 @@ import {
   CircularProgress,
   Chip,
 } from '@mui/material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import Message from './Message';
 
 const MessageList = ({ 

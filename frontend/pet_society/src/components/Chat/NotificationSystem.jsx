@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Snackbar,
   Alert,
@@ -11,11 +11,12 @@ import {
   Close as CloseIcon,
   Reply as ReplyIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const NotificationSystem = ({ onMessageClick }) => {
   const [notifications, setNotifications] = useState([]);
   const { user } = useAuth();
+  const lastNotificationRef = useRef(null);
 
   // Request notification permission
   useEffect(() => {
@@ -25,6 +26,27 @@ const NotificationSystem = ({ onMessageClick }) => {
   }, []);
 
   const showNotification = useCallback((message, conversation) => {
+    console.log('NotificationSystem: showNotification called', { message, conversation });
+    
+    // Create unique identifier for this notification
+    const notificationId = `${conversation.id}-${message.author.id}-${message.body}-${message.created}`;
+    
+    // Check if we just showed this notification (prevent duplicates)
+    if (lastNotificationRef.current === notificationId) {
+      console.log('NotificationSystem: Duplicate notification prevented');
+      return;
+    }
+    
+    // Store the notification ID
+    lastNotificationRef.current = notificationId;
+    
+    // Clear the stored ID after 1 second to allow legitimate repeats
+    setTimeout(() => {
+      if (lastNotificationRef.current === notificationId) {
+        lastNotificationRef.current = null;
+      }
+    }, 1000);
+    
     // Don't show notification for own messages
     if (message.author.id === user?.id) return;
 

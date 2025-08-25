@@ -21,7 +21,7 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import webSocketService from '../../services/websocket';
 import { chatAPI } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }) => {
   const [messages, setMessages] = useState([]);
