@@ -1,158 +1,72 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from rest_framework import status, generics, permissions
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import login, logout
+
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserSerializer, UserUpdateSerializer, UserPasswordChangeSerializer
 from .models import User
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth import authenticate, login, logout, get_user_model
-from django.contrib import messages
-from .forms import UserForm, LoginForm, CustomUserForm
-from django.contrib.auth.forms import UserCreationForm
 
-# Create your views here.
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def register_view(request):
+    serializer = UserRegistrationSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        token, created = Token.objects.get_or_create(user=user)
 
-def user_register (request):
-    if request.user.is_authenticated:
-        return redirect('blogs:home')
+        return Response({
+            'message': 'User registered successfully',
+            'user': UserSerializer(user).data,
+            'token': token.key
+        }, status=status.HTTP_201_CREATED)
     
-    if request.method == 'POST':
-        register_form = UserForm(request.POST)
-        if register_form.is_valid():
-            register_form.save()
-            messages.success(request, 'Registration successful! Please log in.')
-    else:
-        register_form = UserForm()
-    context = {'register_form': register_form}
-    return render(request, 'users/register.html', context)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def user_login (request):
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def login_view(request):
+    serializer = UserLoginSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.validated_data['user']
+        login(request, user)
+        token, created = Token.objects.get_or_create(user=user)
 
-    if request.user.is_authenticated:
-        return redirect('blogs:home')
+        return Response({
+            'message': 'User logged in successfully',
+            'user': UserSerializer(user, context={'request': request}).data,
+            'token': token.key
+        }, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    if request.method == 'POST':
-        form = LoginForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            if not user.is_active:
-                messages.error(request,"Sorry, you are blocked. Contact the admin.")
-                logout(request)
-                return redirect('blog_auth:login')
-            
-            login(request, user)
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def logout_view(request):
+    try:
+        Token.objects.get(user=request.user).delete()
+        logout(request)
+        return Response({'message': 'User logged out successfully'}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': 'Logout failed'}, status=status.HTTP_404_NOT_FOUND)
 
-            if request.GET.get('next') is not None:
-                return redirect(request.GET.get('next'))
-            
-            return redirect('blogs:home')
-    else:
-        form = LoginForm()
-    context = {'form': form}
-    return render(request, 'users/login.html', context)
+class UserDetailView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        return self.request.user
 
-def user_logout(request):
-    logout(request)
-    messages.success(request, 'You have been logged out successfully.')
-    return redirect('users:login')
-
-def blocked_page(request):
-    return render(request, 'users/blocked.html')
-
-
-def is_superadmin(user):
-    return user.is_authenticated and (user.is_superuser or user.is_admin)
-
-@user_passes_test(is_superadmin)
-def manage_users(request):
-    users = User.objects.exclude(pk=request.user.pk)
-    return render(request, "users/manage_users.html", {"users": users})
-
-@login_required
-@user_passes_test(is_superadmin)
-def toggle_admin(request, user_id):
-    user = get_object_or_404(User, pk=user_id)
-    user.is_admin = not user.is_admin
-    user.save()
-    return redirect("users:manage_users")
-
-@login_required
-@user_passes_test(is_superadmin)
-def toggle_block(request, user_id):
-    user = get_object_or_404(User, pk=user_id)
-    user.is_blocked = not user.is_blocked
-    user.save()
-    return redirect("users:users_list")
-
-
-
-User = get_user_model()
-
-def users_list(request):
-    users = User.objects.all()
-    return render(request, 'users/users_list.html', {'users': users})
-
-
-
-
-def create_user_view(request):
-    if request.method == 'POST':
-        form = CustomUserForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "User created successfully.")
-            return redirect('users:users_list')
-    else:
-        form = CustomUserForm()
-    return render(request, 'users/create_user.html', {'form': form})
-
-
-    return render(request, 'users/create_user.html', {'form': form})
-def user_edit(request, pk):
-    user = get_object_or_404(User, pk=pk)
-    if request.method == 'POST':
-        new_email = request.POST.get('email')
-        new_username = request.POST.get('username')
-        email_exists = User.objects.exclude(pk=pk).filter(email=new_email).exists()
-        username_exists = User.objects.exclude(pk=pk).filter(username=new_username).exists()
-        if email_exists:
-            messages.error(request, 'This email is already in use.')
-        elif username_exists:
-            messages.error(request, 'This username is already in use.')
-        else:
-            user.email = new_email
-            user.username = new_username
-            user.save()
-            messages.success(request, 'User updated successfully!')
-            return redirect('users:users_list')
-    return render(request, 'users/user_edit.html', {'user': user})
-
-
-def user_delete(request, pk):
-    user = get_object_or_404(User, pk=pk)
-    if user.is_superuser:
-        messages.error(request, "You can't delete another admin.")
-        return redirect('users:users_list')
-    if request.method == 'POST':
-        user.delete()
-        messages.success(request, 'User deleted successfully!')
-        return redirect('users:users_list')
-    return render(request, 'users/user_confirm_delete.html', {'user': user})
-
-
-@login_required
-def promote_user_view(request, user_id):
-    user_to_promote = get_object_or_404(User, id=user_id)
-    current_user = request.user
-
-    if user_to_promote.is_superuser or user_to_promote.is_admin:
-        messages.error(request, "Cannot promote or demote a superuser or admin.")
-    elif user_to_promote.is_staff:
-        if current_user.is_superuser:
-            user_to_promote.is_staff = False
-            user_to_promote.save()
-            messages.success(request, "User's admin privileges have been removed.")
-        else:
-            messages.error(request, "You do not have permission to demote this user.")
-    else:
-        user_to_promote.is_staff = True
-        user_to_promote.save()
-        messages.success(request, "User has been promoted to admin.")
-
-    return redirect('users:users_list')
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return UserUpdateSerializer
+        return UserSerializer
+    
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def profile_view(request, username):
+    try:
+        user = User.objects.get(username=username)
+        serializer = UserSerializer(user, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
