@@ -1,10 +1,9 @@
 
+import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, CircularProgress } from '@mui/material';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CssBaseline, Box } from '@mui/material';
 import PetSocietyChat from './components/Chat/PetSocietyChat';
 import ChatContainer from './components/Chat/ChatContainer';
-import Login from './components/Auth/Login';
 import './App.css';
 
 // Create a theme
@@ -34,49 +33,22 @@ const theme = createTheme({
   },
 });
 
-// Main App Content Component
+// Main App Content Component - Pure Chat App
 const AppContent = () => {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          height: '100vh',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // Enable authentication flow with integrated chat
   return (
     <PetSocietyChat>
       <Box sx={{ height: '100vh', backgroundColor: 'background.default' }}>
-        {isAuthenticated ? <ChatContainer /> : <Login />}
+        <ChatContainer />
       </Box>
     </PetSocietyChat>
   );
-
-  // Test components (uncomment for debugging if needed)
-  // return (
-  //   <Box sx={{ height: '100vh', backgroundColor: 'background.default' }}>
-  //     <ChatTest />
-  //   </Box>
-  // );
 };
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <AppContent />
     </ThemeProvider>
   );
 }

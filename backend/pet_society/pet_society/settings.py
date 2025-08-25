@@ -46,10 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'channels',
-    'admins',
     'chats',
-    'comments',
-    'posts',
     'users',
 
 ]
