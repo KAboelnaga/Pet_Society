@@ -9,6 +9,9 @@ from .views import (
     CategoryViewSet,
 )
 
+# App namespace
+app_name = 'posts'
+
 # Router for ViewSets
 router = DefaultRouter()
 router.register(r'posts', PostViewSet)

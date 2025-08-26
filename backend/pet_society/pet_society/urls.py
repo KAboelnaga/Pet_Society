@@ -23,19 +23,21 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Chat functionality (core feature)
+    path('api/chats/', include('chats.api_urls')),
+    
+    # Main API routes (includes posts and comments)
     path('api/', include('pet_society.api_urls')),
+    
+    # User authentication routes
     path('users/', include('users.urls', namespace='users')),
-    # path('posts/', include('posts.urls', namespace='posts')),
-    # path('comments/', include('comments.urls', namespace='comments')),
-    # path('chats/', include('chats.urls', namespace='chats')),
-    # path('followers/', include('followers.urls', namespace='followers')),
-
-
-
-    path('api/', include('pet_society.api_urls')),
-    path('api/auth/', include('users.urls')),
+    path('api/auth/', include('users.api_urls')),  # Different endpoint for API auth
     path('api/admins/', include('admins.urls', namespace='admins')),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+    # Placeholder for followers (when implemented)
+    path('followers/', include('followers.urls')),
 ]
 
 # Serve media files during development

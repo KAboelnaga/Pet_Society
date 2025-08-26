@@ -1,12 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CommentViewSet
+from . import views
 
-# App namespace
-app_name = 'comments'
-
+# API Router
 router = DefaultRouter()
-router.register(r'comments', CommentViewSet)
+router.register(r'groups', views.ChatGroupViewSet, basename='chatgroup')
 
 urlpatterns = [
     path('', include(router.urls)),

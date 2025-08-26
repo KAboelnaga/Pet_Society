@@ -1,11 +1,12 @@
-// services/api.js
-import axios from 'axios';
+import axios from "axios";
+import { API_CONFIG } from "../config/api";
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
-// Create axios instance
+// Main API instance with authentication
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -40,7 +41,7 @@ api.interceptors.response.use(
 
 // Auth API calls (these use the full base URL since they're not under /api/)
 const authApi = axios.create({
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: API_CONFIG.BASE_URL.replace('/api', ''),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -60,6 +61,7 @@ authApi.interceptors.request.use(
   }
 );
 
+// Authentication API
 export const authAPI = {
   register: (userData) => authApi.post('/users/register/', userData),
   login: (credentials) => authApi.post('/users/login/', credentials),
@@ -67,6 +69,66 @@ export const authAPI = {
   getProfile: () => authApi.get('/users/profile/'),
   updateProfile: (data) => authApi.patch('/users/profile/update/', data),
   getUserProfile: (username) => authApi.get(`/users/profile/${username}/`),
+};
+
+// Chat API functions - Pure chat functionality
+export const chatAPI = {
+  // Get all chat groups for the current user
+  getChatGroups: () => api.get("/chats/groups/"),
+  
+  // Get a specific chat group with messages
+  getChatGroup: (groupId) => api.get(`/chats/groups/${groupId}/`),
+  
+  // Create a new chat group
+  createChatGroup: (data) => api.post("/chats/groups/", data),
+  
+  // Join a chat group
+  joinChatGroup: (groupId) => api.post(`/chats/groups/${groupId}/join/`),
+  
+  // Leave a chat group
+  leaveChatGroup: (groupId) => api.post(`/chats/groups/${groupId}/leave/`),
+  
+  // Get messages for a chat group
+  getMessages: (groupId, options = {}) => {
+    const { page = 1, pageSize = 50, beforeMessageId } = options;
+    const params = new URLSearchParams();
+    
+    params.append("page", page.toString());
+    params.append("page_size", pageSize.toString());
+    
+    if (beforeMessageId) {
+      params.append("before_message_id", beforeMessageId.toString());
+    }
+    
+    return api.get(`/chats/groups/${groupId}/messages/?${params.toString()}`);
+  },
+  
+  // Send a message (fallback for non-WebSocket)
+  sendMessage: (groupId, message) =>
+    api.post(`/chats/groups/${groupId}/send_message/`, { body: message }),
+
+  // Send an image message
+  sendImageMessage: (groupId, imageFile) => {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+    return api.post(`/chats/groups/${groupId}/send_message/`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
+  // Mark messages as read
+  markAsRead: (groupId) =>
+    api.post(`/chats/groups/${groupId}/mark_as_read/`),
+
+  // Get total unread message count
+  getUnreadCount: () =>
+    api.get("/chats/groups/unread_count/"),
+
+  // Invite user to group
+  inviteUser: (groupId, username) =>
+    api.post(`/chats/groups/${groupId}/invite_user/`, { username: username }),
 };
 
 // Helper functions

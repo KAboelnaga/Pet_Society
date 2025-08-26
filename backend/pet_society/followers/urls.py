@@ -1,13 +1,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CommentViewSet
 
 # App namespace
-app_name = 'comments'
+app_name = 'followers'
 
 router = DefaultRouter()
-router.register(r'comments', CommentViewSet)
+# Add viewsets here when they're created
+# router.register(r'followers', FollowerViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    # Add specific URL patterns here if needed
 ]
