@@ -26,7 +26,6 @@ urlpatterns = [
     
     # Chat functionality (core feature)
     path('api/chats/', include('chats.api_urls')),
-    path('chats/', include('chats.urls')),
     
     # Main API routes (includes posts and comments)
     path('api/', include('pet_society.api_urls')),

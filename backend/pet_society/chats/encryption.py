@@ -47,12 +47,3 @@ def decrypt_message(encrypted_message):
     except Exception as e:
         print(f"Decryption error: {e}")
         return None
-
-def get_message_content(message_obj):
-    """
-    Get the content of a message, decrypting if necessary
-    """
-    if message_obj.is_encrypted:
-        decrypted = decrypt_message(message_obj.encrypted_body)
-        return decrypted if decrypted else '[Encrypted Message]'
-    return message_obj.encrypted_body

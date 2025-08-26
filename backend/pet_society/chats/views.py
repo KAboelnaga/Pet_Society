@@ -1,6 +1,5 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -258,41 +257,6 @@ class ChatGroupViewSet(viewsets.ModelViewSet):
             )
 
 
-class GroupMessageViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = GroupMessageSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return GroupMessage.objects.filter(
-            group__members=self.request.user
-        ).select_related('author', 'group')
 
 
-# Traditional Django views for templates (if needed)
-def chat_room(request, room_name):
-    """Render chat room template"""
-    if not request.user.is_authenticated:
-        return redirect('users:login')
 
-    chat_group, created = ChatGroup.objects.get_or_create(name=room_name)
-    if not chat_group.members.filter(id=request.user.id).exists():
-        chat_group.members.add(request.user)
-
-    context = {
-        'room_name': room_name,
-        'chat_group': chat_group,
-        'user': request.user,
-    }
-    return render(request, 'chats/room.html', context)
-
-
-def chat_index(request):
-    """List all available chat rooms"""
-    if not request.user.is_authenticated:
-        return redirect('users:login')
-
-    chat_groups = ChatGroup.objects.filter(members=request.user)
-    context = {
-        'chat_groups': chat_groups,
-    }
-    return render(request, 'chats/index.html', context)

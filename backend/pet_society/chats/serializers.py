@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import ChatGroup, GroupMessage
-from .encryption import get_message_content
 
 User = get_user_model()
 
