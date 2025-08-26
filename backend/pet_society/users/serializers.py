@@ -65,10 +65,11 @@ class UserSerializer(serializers.ModelSerializer):
     following_count = serializers.SerializerMethodField()
     posts_count = serializers.SerializerMethodField()
     is_following = serializers.SerializerMethodField()
+    
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_blocked', 'is_admin', 'created_at', 'image', 'bio', 'location', 'followers_count', 'following_count', 'posts_count', 'is_following')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_blocked', 'is_admin','is_superuser', 'created_at', 'image', 'bio', 'location', 'followers_count', 'following_count', 'posts_count', 'is_following')
         read_only_fields = ('id', 'created_at')
     
     def get_followers_count(self, obj):

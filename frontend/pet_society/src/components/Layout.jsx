@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Navbar, Nav, Button, Badge, Dropdown } from 'react-bootstrap';
+import { Container, Navbar, Nav, Button, Badge, Dropdown  } from 'react-bootstrap';
 import { BsSun, BsMoon, BsBoxArrowRight, BsPersonCircle } from 'react-icons/bs';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 const Layout = ({ children, title = 'Pet Society Admin' }) => {
   const { user, logout } = useAuth();
   const { mode, toggleTheme } = useTheme();
+  
 
   const handleLogout = async () => {
     await logout();
@@ -30,14 +31,9 @@ const Layout = ({ children, title = 'Pet Society Admin' }) => {
           <Navbar.Brand className="fw-bold">
             🐾 {title}
           </Navbar.Brand>
-          
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
+          {/* Theme Toggle Button */}
+         
             <Nav className="ms-auto d-flex align-items-center">
-              {/* Theme Toggle Button */}
-              {/* there are problems with the navbar only the title appear and the buttons are not visible i need to fix it can you do this 
-              and the toggle button as well doesn't appear and when i turn to the mobile vision is appeaars 1 sec and disappear again
-              do something please i don't get it */}
               <Button
                 variant="outline-light"
                 size="sm"
@@ -86,7 +82,6 @@ const Layout = ({ children, title = 'Pet Society Admin' }) => {
                 </Dropdown.Menu>
               </Dropdown>
             </Nav>
-          </Navbar.Collapse>
         </Container>
       </Navbar>
 

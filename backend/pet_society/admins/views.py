@@ -6,7 +6,6 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
-from .models import Category
 from .serializers import (
     CategorySerializer, CategoryCreateSerializer,
     UserSerializer, UserUpdateSerializer,
@@ -14,6 +13,7 @@ from .serializers import (
 )
 from users.models import User
 from posts.models import Post
+from posts.models import Category
 
 # Custom permission for superuser only
 class IsSuperUser(IsAdminUser):
@@ -129,3 +129,11 @@ def dashboard_stats(request):
         'total_posts': total_posts,
         'total_categories': total_categories,
     })
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def block_multiple_users(request):
+    user_ids = request.data.get('user_ids', [])
+    User.objects.filter(id__in=user_ids).update(is_blocked=True)
+    return Response({'success': True})

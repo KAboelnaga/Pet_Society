@@ -11,6 +11,9 @@ const Navbar = () => {
     await logout();
   };
 
+  console.log("🔍 Navbar - isAuthenticated:", isAuthenticated);
+  console.log("🔍 Navbar - user:", user);
+
   if (!isAuthenticated) {
     return null; // Don't show navbar if not authenticated
   }
@@ -56,7 +59,7 @@ const Navbar = () => {
               )}
             </button>
           </div>
-
+          
           {/* User info and logout */}
           <div className="flex items-center space-x-4">
             {user && (
@@ -73,6 +76,18 @@ const Navbar = () => {
                     {user.first_name} {user.last_name}
                   </span>
                 </div>
+
+                {/* i need to make it appear if the user is admin or super admin not only super admin */}
+                {(user?.is_superuser || user?.is_admin) && (
+            <div className="flex items-center">
+              <Link
+                to="/dashboard"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              >
+                Admin Panel
+              </Link>
+            </div>
+          )}
                 <button
                   onClick={handleLogout}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"

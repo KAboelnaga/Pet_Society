@@ -53,7 +53,8 @@ const fetchPosts = async () => {
     try {
       setLoading(true);
       const response = await api.get(`posts/?search=${searchTerm}`);
-      setPosts(response.data);
+      console.log("📌 Search API Response:", response.data.results);
+      setPosts(response.data.results);
     } catch (error) {
       showAlert('Error searching posts', 'danger');
     } finally {
@@ -177,7 +178,7 @@ const handleDeletePost = async (postId) => {
         <Card className="mb-4 border-0 shadow-sm">
           <Card.Body>
             <Row>
-              <Col md={6}>
+              <Col>
                 <InputGroup>
                   <Form.Control
                     type="text"

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider as CustomThemeProvider } from './context/ThemeContext';
 
 // Main app components
 import HomePage from './pages/HomePage';
@@ -89,12 +90,15 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
+      <CustomThemeProvider>
+
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <PetSocietyChat>
           <AppRoutes />
         </PetSocietyChat>
       </ThemeProvider>
+      </CustomThemeProvider>
     </AuthProvider>
   );
 }

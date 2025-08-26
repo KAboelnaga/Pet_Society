@@ -36,6 +36,7 @@ const fetchCategories = async () => {
   try {
     setLoading(true);
     const response = await api.get('/categories/');
+    console.log("📌 Categories API Response:", response.data);
     setCategories(response.data.results);
   } catch (error) {
     console.error("❌ Error fetching categories:", error);
@@ -164,7 +165,6 @@ const fetchCategories = async () => {
                   <tr>
                     <th>Name</th>
                     <th>Description</th>
-                    <th>Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -178,11 +178,6 @@ const fetchCategories = async () => {
                         {category.description || (
                           <span className="text-muted">No description</span>
                         )}
-                      </td>
-                      <td>
-                        <Badge bg={category.is_active ? 'success' : 'secondary'}>
-                          {category.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
                       </td>
                       <td>
                         <div className="d-flex gap-2">

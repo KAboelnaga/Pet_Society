@@ -16,6 +16,7 @@ import {
 } from 'react-bootstrap';
 import { BsSearch, BsShieldX, BsShieldCheck, BsArrowLeft, BsPersonCircle } from 'react-icons/bs';
 import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import Layout from '../components/Layout';
 import api from '../services/api';
@@ -33,6 +34,11 @@ const UsersPage = () => {
   const [actionUser, setActionUser] = useState(null);
   const [actionType, setActionType] = useState('');
 
+
+  useEffect(() => {
+  console.log("Current User:", currentUser);
+}, [currentUser]);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -40,9 +46,9 @@ const UsersPage = () => {
 const fetchUsers = async () => {
   try {
     setLoading(true);
-    const response = await api.get('/api/users/');
-    console.log("📌 API Response:", response.data);
-    setUsers(response.data);
+    const response = await api.get('/admins/users/');
+    console.log("📌 API Response:", response.data.results);
+    setUsers(response.data.results);
   } catch (error) {
     console.error("❌ Error fetching users:", error);
     showAlert('Error fetching users', 'danger');
@@ -56,83 +62,99 @@ const fetchUsers = async () => {
   const handleSearch = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/users/?search=${searchTerm}`);
-      setUsers(response.data);
+      const response = await api.get(`/admins/users/?search=${searchTerm}`);
+      console.log("📌 Search API Response:", response.data.results);
+      setUsers(response.data.results);
     } catch (error) {
       showAlert('Error searching users', 'danger');
     } finally {
       setLoading(false);
     }
   };
+// Toggle block status
+const handleToggleBlock = async (userId, currentBlockedStatus) => {
+  try {
+    // استخدم authAPI لأنه فيه توكين
+    await authAPI.updateUser(userId, {
+      is_blocked: !currentBlockedStatus,
+    });
 
-  const handleToggleBlock = async (userId, currentBlockedStatus) => {
-    try {
-      await api.patch(`api/users/${userId}/update/`, {
-        is_blocked: !currentBlockedStatus,
-      });
-      showAlert(`User ${currentBlockedStatus ? 'unblocked' : 'blocked'} successfully`);
-      fetchUsers();
-    } catch (error) {
-      showAlert(error.response?.data?.error || 'Error updating user', 'danger');
-    }
-  };
+    showAlert(`User ${currentBlockedStatus ? 'unblocked' : 'blocked'} successfully`);
+    fetchUsers(); // اعادة جلب اللستة بعد التعديل
+  } catch (error) {
+    console.error("❌ Error blocking user:", error);
+    showAlert(error.response?.data?.error || 'Error updating user', 'danger');
+  }
+};
 
-  const handleToggleAdmin = async (userId, currentAdminStatus) => {
-    try {
-      await api.patch(`api/users/${userId}/update/`, {
-        is_admin: !currentAdminStatus,
-      });
-      showAlert(`User ${currentAdminStatus ? 'demoted' : 'promoted'} successfully`);
-      fetchUsers();
-    } catch (error) {
-      showAlert(error.response?.data?.error || 'Error updating user', 'danger');
-    }
-  };
+// Toggle admin status
+const handleToggleAdmin = async (userId, currentAdminStatus) => {
+  try {
+    await authAPI.updateUser(userId, {
+      is_admin: !currentAdminStatus,
+    });
 
-  const showAlert = (message, variant = 'success') => {
-    setAlert({ show: true, message, variant });
-    setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000);
-  };
+    showAlert(`User ${currentAdminStatus ? 'demoted' : 'promoted'} successfully`);
+    fetchUsers();
+  } catch (error) {
+    console.error("❌ Error updating admin status:", error);
+    showAlert(error.response?.data?.error || 'Error updating user', 'danger');
+  }
+};
 
-  const canModifyUser = (user) => {
-    // Super admin can modify anyone except themselves
-    if (currentUser?.is_superuser) {
-      return user.id !== currentUser.id;
-    }
-    // Regular admin can only modify non-admin users
-    return !user.is_admin && !user.is_superuser;
-  };
+// Show alert
+const showAlert = (message, variant = 'success') => {
+  setAlert({ show: true, message, variant });
+  setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000);
+};
 
-  const handleActionClick = (user, type) => {
-    setActionUser(user);
-    setActionType(type);
-    setShowConfirmModal(true);
-  };
+// Permissions logic
+const canModifyUser = (user) => {
+  if (!currentUser) return false;
+  
+  if (currentUser.is_superuser) {
+    // Superuser can modify anyone except themselves
+    return user.id !== currentUser.id;
+  }
 
-  const handleConfirmAction = () => {
-    if (!actionUser) return;
+  // Admins can only modify non-admin users
+  return currentUser.is_admin && !user.is_admin && !user.is_superuser;
+};
 
-    if (actionType === 'block') {
-      handleToggleBlock(actionUser.id, actionUser.is_blocked);
-    } else if (actionType === 'admin') {
-      handleToggleAdmin(actionUser.id, actionUser.is_admin);
-    }
+// Handle button click
+const handleActionClick = (user, type) => {
+  setActionUser(user);
+  setActionType(type);
+  setShowConfirmModal(true);
+};
 
-    setShowConfirmModal(false);
-    setActionUser(null);
-    setActionType('');
-  };
+// Confirm action in modal
+const handleConfirmAction = () => {
+  if (!actionUser) return;
 
-  const getActionText = () => {
-    if (!actionUser || !actionType) return '';
-    
-    if (actionType === 'block') {
-      return actionUser.is_blocked ? 'unblock' : 'block';
-    } else if (actionType === 'admin') {
-      return actionUser.is_admin ? 'remove admin privileges from' : 'promote to admin';
-    }
-    return '';
-  };
+  if (actionType === 'block') {
+    handleToggleBlock(actionUser.id, actionUser.is_blocked);
+  } else if (actionType === 'admin') {
+    handleToggleAdmin(actionUser.id, actionUser.is_admin);
+  }
+
+  setShowConfirmModal(false);
+  setActionUser(null);
+  setActionType('');
+};
+
+// Get action text for modal
+const getActionText = () => {
+  if (!actionUser || !actionType) return '';
+
+  if (actionType === 'block') {
+    return actionUser.is_blocked ? 'unblock' : 'block';
+  } else if (actionType === 'admin') {
+    return actionUser.is_admin ? 'remove admin privileges from' : 'promote to admin';
+  }
+  return '';
+};
+
 
   return (
     <Layout title="Users Management">
@@ -176,7 +198,7 @@ const fetchUsers = async () => {
         <Card className="mb-4 border-0 shadow-sm">
           <Card.Body>
             <Row>
-              <Col md={6}>
+              <Col>
                 <InputGroup>
                   <Form.Control
                     type="text"
