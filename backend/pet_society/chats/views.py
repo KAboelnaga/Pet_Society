@@ -231,6 +231,23 @@ class ChatGroupViewSet(viewsets.ModelViewSet):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        """Get total unread message count for the current user across all chats"""
+        user_chat_groups = ChatGroup.objects.filter(members=request.user)
+        total_unread = 0
+        
+        for chat_group in user_chat_groups:
+            # Count unread messages for this chat (messages not authored by user and not read by user)
+            unread_count = chat_group.messages.exclude(author=request.user).exclude(
+                read_by__user=request.user
+            ).count()
+            total_unread += unread_count
+        
+        return Response({
+            'total_unread_count': total_unread
+        })
+
     @action(detail=True, methods=['post'])
     def invite_user(self, request, pk=None):
         """Invite a user to the chat group"""

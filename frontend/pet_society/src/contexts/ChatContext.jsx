@@ -46,6 +46,17 @@ export const ChatProvider = ({ children }) => {
     return conversation;
   }, []);
 
+  // Load unread count from backend
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const response = await chatAPI.getUnreadCount();
+      setUnreadCount(response.data.total_unread_count);
+    } catch (error) {
+      console.error('Error loading unread count:', error);
+      setUnreadCount(0);
+    }
+  }, []);
+
   const loadConversations = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -55,18 +66,14 @@ export const ChatProvider = ({ children }) => {
       const decryptedConversations = conversationsData.map(decryptConversation);
       setConversations(decryptedConversations);
       
-      // Update unread count
-      const totalUnread = decryptedConversations.reduce(
-        (sum, conv) => sum + (conv.unread_count || 0),
-        0
-      );
-      setUnreadCount(totalUnread);
+      // Get unread count from backend instead of calculating it
+      await loadUnreadCount();
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [decryptConversation]);
+  }, [decryptConversation, loadUnreadCount]);
 
   // Load conversations and setup global WebSocket when user is authenticated
   useEffect(() => {
@@ -78,8 +85,6 @@ export const ChatProvider = ({ children }) => {
 
       // Listen for new chat notifications
       const unsubscribeNewChat = globalWebSocketService.onNewChat((data) => {
-        console.log('New chat notification:', data);
-
         // Reload conversations to get the new chat
         loadConversations();
 
@@ -100,71 +105,30 @@ export const ChatProvider = ({ children }) => {
         }
       });
 
-      // Listen for message notifications (for desktop notifications only)
+      // Listen for message notifications
       const unsubscribeMessage = globalWebSocketService.onMessage((data) => {
-        console.log('ChatContext: Message notification received:', data);
-
         if (data.type === 'chat_message_notification') {
-          console.log('ChatContext: Processing message notification:', data);
-
           // Check if chat is currently active first
           const activeChats = JSON.parse(localStorage.getItem('activeChats') || '[]');
           const isActiveChat = activeChats.some(chat =>
             chat.id === data.chat_id && !chat.isMinimized
           );
 
-          console.log('ChatContext: isActiveChat =', isActiveChat);
-
-          // Update conversations with new message
+          // Force reload conversations and unread count
+          // Immediate state update to force re-render
           setConversations(prev => {
-            const existingConv = prev.find(conv => conv.id === data.chat_id);
-            
-            if (!existingConv) {
-              // Conversation not found, reload all conversations
-              console.log('Conversation not found, reloading conversations');
-              loadConversations();
-              return prev;
-            }
-
-            const updatedConversations = prev.map(conv => {
-              if (conv.id === data.chat_id) {
-                return {
-                  ...conv,
-                  last_message: {
-                    id: Date.now(),
-                    body: data.message,
-                    author: data.author.username,
-                    created: data.timestamp
-                  },
-                  // Only increment unread count if chat is not active
-                  unread_count: isActiveChat ? (conv.unread_count || 0) : (conv.unread_count || 0) + 1
-                };
-              }
-              return conv;
-            });
-
-            // Sort by most recent message
-            const sortedConversations = updatedConversations.sort((a, b) => {
-              const aTime = a.last_message?.created || a.created || '0';
-              const bTime = b.last_message?.created || b.created || '0';
-              return new Date(bTime) - new Date(aTime);
-            });
-
-            // Update global unread count from conversations
-            const totalUnread = sortedConversations.reduce(
-              (sum, conv) => sum + (conv.unread_count || 0),
-              0
-            );
-            setUnreadCount(totalUnread);
-
-            return sortedConversations;
+            // Trigger a re-render by creating a new array reference
+            return [...prev];
           });
+          
+          // Then load fresh data
+          setTimeout(() => {
+            loadConversations();
+          }, 100);
 
           // Show notification if chat is not currently active
-
           if (!isActiveChat && window.showChatNotification) {
-            console.log('ChatContext: Calling showChatNotification');
-            const conversation = conversations.find(c => c.id === data.chat_id) || {
+            const conversation = {
               id: data.chat_id,
               name: data.chat_name,
               is_private: data.is_private
@@ -183,7 +147,6 @@ export const ChatProvider = ({ children }) => {
       });
 
       return () => {
-        console.log('ChatContext cleanup - disconnecting WebSocket');
         unsubscribeNewChat();
         unsubscribeMessage();
         globalWebSocketService.disconnect();
@@ -192,7 +155,8 @@ export const ChatProvider = ({ children }) => {
       // If user is not authenticated, make sure WebSocket is disconnected
       globalWebSocketService.disconnect();
     }
-  }, [isAuthenticated, user, loadConversations]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user]); // Intentionally excluding loadConversations to avoid reconnections
 
   const createConversation = async (conversationData) => {
     try {
@@ -233,6 +197,27 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const markAsRead = useCallback(async (conversationId) => {
+    try {
+      // Call backend to mark as read
+      await chatAPI.markAsRead(conversationId);
+      
+      // Update local conversation state (remove unread count display)
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === conversationId 
+            ? { ...conv, unread_count: 0 }
+            : conv
+        )
+      );
+      
+      // Refresh total unread count from backend
+      await loadUnreadCount();
+    } catch (error) {
+      console.error('Error marking as read:', error);
+    }
+  }, [loadUnreadCount]);
+
   const openChat = useCallback((conversation) => {
     setActiveChats(prev => {
       // Check if chat is already open
@@ -249,7 +234,10 @@ export const ChatProvider = ({ children }) => {
       const updatedChats = [newChat, ...prev.slice(0, 2)];
       return updatedChats;
     });
-  }, []);
+    
+    // Mark the conversation as read when opened
+    markAsRead(conversation.id);
+  }, [markAsRead]);
 
   const closeChat = useCallback((chatId) => {
     setActiveChats(prev => prev.filter(chat => chat.id !== chatId));
@@ -265,44 +253,10 @@ export const ChatProvider = ({ children }) => {
     );
   }, []);
 
-  const markAsRead = useCallback((conversationId) => {
-    setConversations(prev => 
-      prev.map(conv => 
-        conv.id === conversationId 
-          ? { ...conv, unread_count: 0 }
-          : conv
-      )
-    );
-    
-    // Recalculate total unread count
-    setUnreadCount(prev => {
-      const conversation = conversations.find(c => c.id === conversationId);
-      return Math.max(0, prev - (conversation?.unread_count || 0));
-    });
-  }, [conversations]);
-
-  const addMessage = useCallback((conversationId, message) => {
-    setConversations(prev => 
-      prev.map(conv => {
-        if (conv.id === conversationId) {
-          const isOwnMessage = message.author.id === user?.id;
-          return {
-            ...conv,
-            last_message: {
-              author: message.author.username,
-              body: message.body,
-              created: message.created,
-            },
-            unread_count: isOwnMessage ? conv.unread_count : (conv.unread_count || 0) + 1,
-          };
-        }
-        return conv;
-      })
-    );
-
-    // Note: Unread count is handled by the WebSocket message listener, not here
-    // Note: Notifications are handled by the WebSocket message listener, not here
-  }, [user?.id]);
+  const addMessage = useCallback(() => {
+    // Simply reload conversations to ensure consistency with backend
+    loadConversations();
+  }, [loadConversations]);
 
   const inviteUserToChat = async (chatId, username) => {
     try {

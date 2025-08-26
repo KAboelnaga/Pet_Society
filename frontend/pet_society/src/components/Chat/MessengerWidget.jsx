@@ -37,15 +37,25 @@ import { useChat } from '../../contexts/ChatContext';
 
 const MessengerWidget = () => {
   const [chatWindows, setChatWindows] = useState([]);
-  const [conversations, setConversations] = useState([]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
   const [newChatUsername, setNewChatUsername] = useState('');
   
   const { user } = useAuth();
-  const { isMessengerOpen, toggleMessenger } = useChat();
+  const { 
+    conversations, 
+    isMessengerOpen, 
+    toggleMessenger, 
+    loadConversations,
+    markAsRead
+  } = useChat(); // Use conversations from ChatContext
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Effect to ensure component re-renders when ChatContext conversations change
+  useEffect(() => {
+    // Component will re-render when conversations change
+  }, [conversations]);
 
   useEffect(() => {
     if (user) {
@@ -60,9 +70,8 @@ const MessengerWidget = () => {
         });
       });
 
-      // Listen for new chat notifications only
-      const unsubscribeNewChat = globalWebSocketService.onNewChat((data) => {
-        console.log('MessengerWidget: New chat created, refreshing conversations:', data);
+      // Only listen for new chat notifications (ChatContext handles message notifications)
+      const unsubscribeNewChat = globalWebSocketService.onNewChat(() => {
         loadConversations();
       });
 
@@ -70,37 +79,7 @@ const MessengerWidget = () => {
         unsubscribeNewChat();
       };
     }
-  }, [user]);
-
-  const loadConversations = async () => {
-    try {
-      const response = await chatAPI.getChatGroups();
-      console.log('Chat groups response:', response.data);
-
-      // Handle response data - check if it's paginated or direct array
-      const conversationsData = response.data.results || response.data;
-      
-      // Ensure conversationsData is an array
-      if (!Array.isArray(conversationsData)) {
-        console.error('Conversations data is not an array:', conversationsData);
-        setConversations([]);
-        return;
-      }
-
-      // Sort conversations by latest message timestamp
-      const sortedConversations = conversationsData.sort((a, b) => {
-        const aTime = a.last_message?.created || a.created || '0';
-        const bTime = b.last_message?.created || b.created || '0';
-        return new Date(bTime) - new Date(aTime);
-      });
-
-      setConversations(sortedConversations);
-
-      // Calculate unread count is now handled by ChatContext
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-    }
-  };
+  }, [user, loadConversations, markAsRead]);
 
   const openChatWindow = async (conversation) => {
     // Check if chat window is already open
@@ -125,14 +104,10 @@ const MessengerWidget = () => {
       setChatWindows(prev => [...prev, newWindow]);
     }
 
-    // Reset unread count for this conversation
-    setConversations(prev => prev.map(conv =>
-      conv.id === conversation.id
-        ? { ...conv, unread_count: 0 }
-        : conv
-    ));
+    // Mark messages as read when opening chat
+    markAsRead(conversation.id);
 
-    // Unread count is now handled by ChatContext via loadConversations
+    // Unread count is now handled by ChatContext via markAsRead
 
     // Mark messages as read via API
     try {
@@ -214,15 +189,8 @@ const MessengerWidget = () => {
           const response = await chatAPI.createChatGroup(chatData);
           const newConversation = response.data;
 
-          // Add new conversation and maintain sorting
-          setConversations(prev => {
-            const updated = [newConversation, ...prev];
-            return updated.sort((a, b) => {
-              const aTime = a.last_message?.created || a.created || '0';
-              const bTime = b.last_message?.created || b.created || '0';
-              return new Date(bTime) - new Date(aTime);
-            });
-          });
+          // Reload conversations to get updated data from backend
+          loadConversations();
 
           openChatWindow(newConversation);
         } else {
@@ -236,15 +204,8 @@ const MessengerWidget = () => {
           const response = await chatAPI.createChatGroup(chatData);
           const newConversation = response.data;
 
-          // Add new conversation and maintain sorting
-          setConversations(prev => {
-            const updated = [newConversation, ...prev];
-            return updated.sort((a, b) => {
-              const aTime = a.last_message?.created || a.created || '0';
-              const bTime = b.last_message?.created || b.created || '0';
-              return new Date(bTime) - new Date(aTime);
-            });
-          });
+          // Reload conversations to get updated data from backend
+          loadConversations();
 
           openChatWindow(newConversation);
         }

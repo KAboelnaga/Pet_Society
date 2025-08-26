@@ -122,6 +122,10 @@ export const chatAPI = {
   markAsRead: (groupId) =>
     api.post(`/chats/groups/${groupId}/mark_as_read/`),
 
+  // Get total unread message count
+  getUnreadCount: () =>
+    api.get("/chats/groups/unread_count/"),
+
   // Invite user to group
   inviteUser: (groupId, username) =>
     api.post(`/chats/groups/${groupId}/invite_user/`, { username: username }),
