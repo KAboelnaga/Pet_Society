@@ -108,11 +108,15 @@ class UserUpdateView(generics.UpdateAPIView):
         return Response(updated_data)
     
 @api_view(['GET'])
-@permission_classes([permissions.AllowAny])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly])
 def profile_view(request, username):
     try:
         user = User.objects.get(username=username)
+        print(f"🔍 Profile view - request.user: {request.user}")
+        print(f"🔍 Profile view - is_authenticated: {request.user.is_authenticated}")
+        print(f"🔍 Profile view - target user: {username}")
         serializer = UserSerializer(user, context={'request': request})
+        print(f"🔍 Profile view - serializer data: {serializer.data}")
         return Response(serializer.data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

@@ -62,13 +62,7 @@ class User(AbstractUser):
     def posts_count(self):
         return self.posts.count()
     
-    @property
-    def is_following(self):
-        request = self.context.get('request')
-        if request and hasattr(request, 'user'):
-            return self.followers.filter(id=request.user.id).exists()
-        return False
-    
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip()

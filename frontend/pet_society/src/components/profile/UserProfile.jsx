@@ -25,9 +25,22 @@ export function UserProfile() {
     const fetchUser = async () => {
       try {
         setLoading(true);
+        console.log("🔍 Token in localStorage:", localStorage.getItem('token'));
+        console.log("🔍 Current user:", currentUser);
         const response = await authAPI.getUserProfile(username);
+        console.log("🔍 User profile response:", response.data);
+        console.log("🔍 is_following value:", response.data.is_following);
+        console.log("🔍 typeof is_following:", typeof response.data.is_following);
+        console.log("🔍 All response keys:", Object.keys(response.data));
         setUser(response.data);
-        setIsFollowing(response.data.is_following || false);
+
+        // Force boolean conversion and log the result
+        const followingStatus = Boolean(response.data.is_following);
+        console.log("🔍 Converted following status:", followingStatus);
+
+        // TEMPORARY TEST: Force a follow state to test button rendering
+        // setIsFollowing(true); // Uncomment this line to test "Unfollow" button
+        setIsFollowing(followingStatus);
         setFollowersCount(response.data.followers_count || 0);
       } catch (e) {
         console.error("Error fetching user profile:", e);
@@ -75,7 +88,9 @@ export function UserProfile() {
 
     setFollowLoading(true);
     try {
+      console.log("🔍 Following user:", username);
       const response = await authAPI.followUser(username);
+      console.log("🔍 Follow response:", response.data);
       setIsFollowing(true);
       setFollowersCount(response.data.followers_count);
     } catch (error) {
@@ -90,7 +105,9 @@ export function UserProfile() {
 
     setFollowLoading(true);
     try {
+      console.log("🔍 Unfollowing user:", username);
       const response = await authAPI.unfollowUser(username);
+      console.log("🔍 Unfollow response:", response.data);
       setIsFollowing(false);
       setFollowersCount(response.data.followers_count);
     } catch (error) {
@@ -142,6 +159,9 @@ export function UserProfile() {
       </>
     );
   }
+
+  // Debug logging for follow state
+  console.log("🔍 Profile render - isFollowing:", isFollowing, "for user:", username);
 
   return (
     <>
@@ -220,6 +240,7 @@ export function UserProfile() {
                     </Link>
                   ) : (
                     // Other user's profile - show follow/unfollow button
+                    <>
                     <button
                       onClick={isFollowing ? handleUnfollow : handleFollow}
                       disabled={followLoading}
@@ -238,15 +259,18 @@ export function UserProfile() {
                       )}
                       {followLoading ? "Loading..." : isFollowing ? "Unfollow" : "Follow"}
                     </button>
+
+                    <button
+                      onClick={handleStartChat}
+                      className="flex items-center justify-center border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                    >
+                      <MessageCircle size={18} className="mr-2" />
+                      Message
+                    </button>
+                    </>
                   )}
 
-                  <button
-                    onClick={handleStartChat}
-                    className="flex items-center justify-center border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-                  >
-                    <MessageCircle size={18} className="mr-2" />
-                    Message
-                  </button>
+                 
                 </div>
               </div>
 
