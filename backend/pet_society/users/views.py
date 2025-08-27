@@ -77,15 +77,23 @@ class UserUpdateView(generics.UpdateAPIView):
         if self.request.method in ['PUT', 'PATCH']:
             return UserUpdateSerializer
         return UserSerializer
-    
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
 
-def update(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         """Override update to return full user data after update"""
+        print(f"Update request received for user: {kwargs.get('username')}")
+        print(f"Request data: {request.data}")
+        print(f"Request user: {request.user}")
+
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+
+        print(f"Instance to update: {instance}")
+
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
+
+        if not serializer.is_valid():
+            print(f"Serializer errors: {serializer.errors}")
+
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
@@ -95,7 +103,9 @@ def update(self, request, *args, **kwargs):
             instance._prefetched_objects_cache = {}
 
         # Return full user data using UserSerializer
-        return Response(UserSerializer(instance, context={'request': request}).data)
+        updated_data = UserSerializer(instance, context={'request': request}).data
+        print(f"Returning updated data: {updated_data}")
+        return Response(updated_data)
     
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])

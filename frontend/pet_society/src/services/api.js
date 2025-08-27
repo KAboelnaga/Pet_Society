@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import axios from "axios";
 import { API_CONFIG } from "../config/api";
 
@@ -8,16 +7,6 @@ const API_BASE_URL = API_CONFIG.BASE_URL;
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-=======
-// services/api.js
-import axios from 'axios';
-
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
-
-// Create axios instance
-const api = axios.create({
-  baseURL: API_BASE_URL,
->>>>>>> profile-page
   headers: {
     'Content-Type': 'application/json',
   },
@@ -82,8 +71,12 @@ export const authAPI = {
   login: (credentials) => authApi.post('/users/login/', credentials),
   logout: () => authApi.post('/users/logout/'),
   getProfile: () => authApi.get('/users/profile/'),
-  updateProfile: (data) => authApi.patch('/users/profile/update/', data),
+  updateProfile: (username, data) => authApi.patch(`/users/profile/${username}/update/`, data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }),
   getUserProfile: (username) => authApi.get(`/users/profile/${username}/`),
+  followUser: (username) => authApi.post(`/users/profile/${username}/follow/`),
+  unfollowUser: (username) => authApi.post(`/users/profile/${username}/unfollow/`),
 };
 
 // Chat API functions - Pure chat functionality
@@ -144,13 +137,6 @@ export const chatAPI = {
   // Invite user to group
   inviteUser: (groupId, username) =>
     api.post(`/chats/groups/${groupId}/invite_user/`, { username: username }),
-  updateProfile: (username, data) =>
-  authApi.patch(`/users/profile/${username}/update/`, data, {
-    headers: { "Content-Type": "multipart/form-data" },
-  }),
-  getUserProfile: (username) => authApi.get(`/users/profile/${username}/`),
-  followUser: (username) => authApi.post(`/users/profile/${username}/follow/`),
-  unfollowUser: (username) => authApi.post(`/users/profile/${username}/unfollow/`),
 };
 
 // Posts API calls

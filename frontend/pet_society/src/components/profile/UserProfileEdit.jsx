@@ -147,27 +147,19 @@ export default function UserProfileEdit() {
     try {
       const formDataToSend = new FormData();
 
-      // Add all form fields to FormData, including empty strings for optional fields
-      Object.keys(formData).forEach((key) => {
-        const value = formData[key];
+      // Add text fields
+      formDataToSend.append('username', formData.username || "");
+      formDataToSend.append('first_name', formData.first_name || "");
+      formDataToSend.append('last_name', formData.last_name || "");
+      formDataToSend.append('bio', formData.bio || "");
+      formDataToSend.append('location', formData.location || "");
 
-        // Handle image file separately
-        if (key === 'image') {
-          if (value && typeof value === 'object' && value instanceof File) {
-            formDataToSend.append(key, value);
-          } else if (value === "" || value === null) {
-            // Don't append image if it's empty (keeps existing image)
-            return;
-          } else if (typeof value === 'string' && value.startsWith('http')) {
-            // Don't append if it's an existing URL
-            return;
-          }
-        } else {
-          // For other fields, append even if empty (to clear the field)
-          formDataToSend.append(key, value || "");
-        }
-      });
+      // Handle image file separately
+      if (formData.image && typeof formData.image === 'object' && formData.image instanceof File) {
+        formDataToSend.append('image', formData.image);
+      }
 
+      console.log("Form data before sending:", formData);
       console.log("Sending form data:", Object.fromEntries(formDataToSend));
 
       const response = await authAPI.updateProfile(formData.username, formDataToSend);
@@ -187,14 +179,24 @@ export default function UserProfileEdit() {
 
     } catch (error) {
       console.error("Error updating profile:", error);
+      console.error("Error response:", error.response);
+      console.error("Error message:", error.message);
 
       // Handle specific error cases
       if (error.response?.data) {
         const serverErrors = error.response.data;
         console.log("Server errors:", serverErrors);
         setErrors(serverErrors);
+        alert(`Error: ${JSON.stringify(serverErrors)}`);
+      } else if (error.response?.status) {
+        const errorMsg = `HTTP ${error.response.status}: ${error.response.statusText}`;
+        console.error("HTTP Error:", errorMsg);
+        setErrors({ general: errorMsg });
+        alert(`Error: ${errorMsg}`);
       } else {
-        setErrors({ general: "Failed to update profile. Please try again." });
+        const errorMsg = "Failed to update profile. Please try again.";
+        setErrors({ general: errorMsg });
+        alert(`Error: ${errorMsg}`);
       }
     } finally {
       setIsLoading(false);
