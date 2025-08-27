@@ -5,10 +5,12 @@ import { Link, useParams } from "react-router-dom";
 import { authAPI, postsAPI } from "../../services/api";
 import UserPostCard from "./UserPostCard";
 import { useAuth } from "../../context/AuthContext";
+import { useChat } from "../../contexts/ChatContext";
 
 export function UserProfile() {
   const { username } = useParams();
   const { user: currentUser } = useAuth();
+  const { startPrivateChat, openChat } = useChat();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
@@ -95,6 +97,18 @@ export function UserProfile() {
       console.error("Error unfollowing user:", error);
     } finally {
       setFollowLoading(false);
+    }
+  };
+
+  const handleStartChat = async () => {
+    try {
+      console.log('Starting private chat with:', username);
+      const conversation = await startPrivateChat(username);
+      console.log('Private chat created/found:', conversation);
+      openChat(conversation);
+    } catch (error) {
+      console.error('Error starting private chat:', error);
+      alert('Failed to start chat. Please try again.');
     }
   };
 
@@ -226,7 +240,10 @@ export function UserProfile() {
                     </button>
                   )}
 
-                  <button className="flex items-center justify-center border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200">
+                  <button
+                    onClick={handleStartChat}
+                    className="flex items-center justify-center border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                  >
                     <MessageCircle size={18} className="mr-2" />
                     Message
                   </button>
