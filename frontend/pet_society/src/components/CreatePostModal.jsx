@@ -12,6 +12,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
   const [categories, setCategories] = useState([]);
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [postType, setPostType] = useState("services");
 
   const fileInputRef = useRef();
 
@@ -54,6 +55,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
     setCategoryId("");
     setImage(null);
     setPreview(null);
+    setPostType("services");
     onClose();
   };
 
@@ -70,6 +72,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
       formData.append("title", title);
       formData.append("content", content);
       formData.append("category_id", categoryId);
+      formData.append("post_type", postType);
       if (image) formData.append("image", image);
 
       const response = await fetch("http://localhost:8000/api/posts/create/", {
@@ -124,6 +127,23 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                 {cat.name}
               </option>
             ))}
+          </select>
+          <select
+            value={postType}
+            onChange={(e) => setPostType(e.target.value)}
+            required
+            className="w-full border rounded-lg px-3 py-2"
+          >
+            <option value="">Select Post Type</option>
+              <option  value="services">
+                Services
+              </option>
+              <option  value="adoption">
+                Adoption
+              </option>
+              <option  value="lost_found">
+                Lost & Found
+              </option>   
           </select>
 
           {/* Title */}

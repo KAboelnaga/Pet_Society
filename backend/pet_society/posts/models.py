@@ -33,7 +33,7 @@ class Post(models.Model):
         ('adoption', 'Adoption'),
         ('lost_found', 'Lost & Found'),
         ('services', 'Services'),
-    ])
+    ], null=True, blank=True)
 
     def __str__(self):
         return self.title

@@ -35,6 +35,7 @@ class PostSerializer(serializers.ModelSerializer):
             "username",        # read
             "created_at",
             "likes_count",
+            "post_type",
             "comments_count",
         ]
 
