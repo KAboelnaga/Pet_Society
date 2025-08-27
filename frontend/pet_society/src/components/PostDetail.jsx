@@ -271,7 +271,10 @@ const PostDetail = () => {
       <div className="post-detail">
         <div className="post-header">
           <div className="post-author-info">
-            <div className="author-avatar">
+            <div
+              className="author-avatar clickable-avatar"
+              onClick={() => navigate(`/profile/${post.username || post.author}`)}
+            >
               {post.user_image ? (
                 <img
                   src={getAbsoluteImageUrl(post.user_image)}
@@ -285,7 +288,12 @@ const PostDetail = () => {
               )}
             </div>
             <div className="author-details">
-              <div className="author-name">{post.username || post.author}</div>
+              <div
+                className="author-name clickable-name"
+                onClick={() => navigate(`/profile/${post.username || post.author}`)}
+              >
+                {post.username || post.author}
+              </div>
               <div className="post-timestamp">{formatDate(post.created_at)}</div>
             </div>
           </div>
@@ -392,7 +400,10 @@ const PostDetail = () => {
             (Array.isArray(comments) ? comments : []).map(comment => (
               <div key={comment.id} className="comment">
                 <div className="comment-main">
-                  <div className="comment-avatar">
+                  <div
+                    className="comment-avatar clickable-avatar"
+                    onClick={() => navigate(`/profile/${comment.author.username}`)}
+                  >
                     {comment.author.image ? (
                       <img
                         src={getAbsoluteImageUrl(comment.author.image)}
@@ -408,7 +419,12 @@ const PostDetail = () => {
                   <div className="comment-body">
                     <div className="comment-header">
                       <div className="comment-header-left">
-                        <span className="comment-author">{comment.author.username}</span>
+                        <span
+                          className="comment-author clickable-name"
+                          onClick={() => navigate(`/profile/${comment.author.username}`)}
+                        >
+                          {comment.author.username}
+                        </span>
                         <span className="comment-date">{formatDate(comment.created_at)}</span>
                       </div>
                       <div className="comment-header-right">
@@ -481,7 +497,10 @@ const PostDetail = () => {
                     {comment.replies.map(reply => (
                       <div key={reply.id} className="reply">
                         <div className="comment-main">
-                          <div className="comment-avatar">
+                          <div
+                            className="comment-avatar clickable-avatar"
+                            onClick={() => navigate(`/profile/${reply.author.username}`)}
+                          >
                             {reply.author.image ? (
                               <img
                                 src={getAbsoluteImageUrl(reply.author.image)}
@@ -497,7 +516,12 @@ const PostDetail = () => {
                           <div className="comment-body">
                             <div className="comment-header">
                               <div className="comment-header-left">
-                                <span className="comment-author">{reply.author.username}</span>
+                                <span
+                                  className="comment-author clickable-name"
+                                  onClick={() => navigate(`/profile/${reply.author.username}`)}
+                                >
+                                  {reply.author.username}
+                                </span>
                                 <span className="comment-date">{formatDate(reply.created_at)}</span>
                               </div>
                               <div className="comment-header-right">

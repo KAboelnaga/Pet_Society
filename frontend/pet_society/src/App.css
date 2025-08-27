@@ -938,6 +938,34 @@ body, html, #root {
   color: #e74c3c;
 }
 
+/* Clickable user elements */
+.clickable-avatar {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-avatar:hover {
+  transform: scale(1.05);
+}
+
+.clickable-avatar:hover .author-image,
+.clickable-avatar:hover .comment-author-image {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.clickable-name {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.clickable-name:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  transform: translateY(-1px);
+}
+
 /* Update comment header to accommodate delete button */
 .comment-header {
   display: flex;
