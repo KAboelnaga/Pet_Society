@@ -36,7 +36,6 @@ const UsersPage = () => {
 
 
   useEffect(() => {
-  console.log("Current User:", currentUser);
 }, [currentUser]);
 
   useEffect(() => {
@@ -47,7 +46,6 @@ const fetchUsers = async () => {
   try {
     setLoading(true);
     const response = await api.get('/admins/users/');
-    console.log("📌 API Response:", response.data.results);
     setUsers(response.data.results);
   } catch (error) {
     console.error("❌ Error fetching users:", error);
@@ -63,7 +61,6 @@ const fetchUsers = async () => {
     try {
       setLoading(true);
       const response = await api.get(`/admins/users/?search=${searchTerm}`);
-      console.log("📌 Search API Response:", response.data.results);
       setUsers(response.data.results);
     } catch (error) {
       showAlert('Error searching users', 'danger');
@@ -90,14 +87,15 @@ const handleToggleBlock = async (userId, currentBlockedStatus) => {
 // Toggle admin status
 const handleToggleAdmin = async (userId, currentAdminStatus) => {
   try {
-    await authAPI.updateUser(userId, {
+    const response = await authAPI.updateUser(userId, {
       is_admin: !currentAdminStatus,
     });
+
 
     showAlert(`User ${currentAdminStatus ? 'demoted' : 'promoted'} successfully`);
     fetchUsers();
   } catch (error) {
-    console.error("❌ Error updating admin status:", error);
+    console.error("❌ Error updating admin status:", error.response?.data || error.message);
     showAlert(error.response?.data?.error || 'Error updating user', 'danger');
   }
 };
@@ -131,6 +129,8 @@ const handleActionClick = (user, type) => {
 // Confirm action in modal
 const handleConfirmAction = () => {
   if (!actionUser) return;
+
+
 
   if (actionType === 'block') {
     handleToggleBlock(actionUser.id, actionUser.is_blocked);

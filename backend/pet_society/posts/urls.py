@@ -7,6 +7,8 @@ from .views import (
     PostDetailAPIView,
     PostViewSet,
     CategoryViewSet,
+
+    CategoryCreateAPIView,
 )
 
 # App namespace
@@ -23,7 +25,7 @@ urlpatterns = [
     path('posts/create/', PostCreateAPIView.as_view(), name='post-create'),
     path('posts/<int:pk>/', PostDetailAPIView.as_view(), name='post-detail'),  # supports GET, PUT, DELETE
     path('categories/', CategoryListAPIView.as_view(), name='category-list'),
-
+    path('categories/create/', CategoryCreateAPIView.as_view(), name='category-create'),
 
     # Include router URLs for ViewSets (includes like actions)
     path('', include(router.urls)),

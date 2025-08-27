@@ -63,6 +63,8 @@ class UserUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
     
     def update(self, request, *args, **kwargs):
+        kwargs['partial'] = True 
+
         user = self.get_object()
         current_user = request.user
         
@@ -83,6 +85,9 @@ class UserUpdateView(generics.UpdateAPIView):
         
         return super().update(request, *args, **kwargs)
 
+
+
+
 # Post Management Views
 class PostListView(generics.ListAPIView):
     serializer_class = PostListSerializer
@@ -93,9 +98,7 @@ class PostListView(generics.ListAPIView):
         search = self.request.query_params.get('search', None)
         if search:
             queryset = queryset.filter(
-                Q(title__icontains=search) |
-                Q(description__icontains=search) |
-                Q(user__username__icontains=search)
+                Q(title__icontains=search)
             )
         return queryset
 
@@ -123,11 +126,13 @@ def dashboard_stats(request):
     total_users = User.objects.count()
     total_posts = Post.objects.count()
     total_categories = Category.objects.count()
+
     
     return Response({
         'total_users': total_users,
         'total_posts': total_posts,
         'total_categories': total_categories,
+        'blocked_users': User.objects.filter(is_blocked=True).count()
     })
 
 

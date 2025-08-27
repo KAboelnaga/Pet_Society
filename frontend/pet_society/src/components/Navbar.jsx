@@ -11,8 +11,6 @@ const Navbar = () => {
     await logout();
   };
 
-  console.log("🔍 Navbar - isAuthenticated:", isAuthenticated);
-  console.log("🔍 Navbar - user:", user);
 
   if (!isAuthenticated) {
     return null; // Don't show navbar if not authenticated

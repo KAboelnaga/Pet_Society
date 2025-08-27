@@ -10,8 +10,6 @@ User = get_user_model()
 class Category(models.Model):
     # Name of the category (e.g., "Dogs")
     name = models.CharField(max_length=100)
-    # description = models.TextField(null=True, blank=True)
-    # status = models.CharField(max_length=20, choices=[('active', 'Active'), ('inactive', 'Inactive')], default='active')
 
     def __str__(self):
         return self.name
@@ -30,6 +28,12 @@ class Post(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='posts')
     # Timestamp when the post was created
     created_at = models.DateTimeField(auto_now_add=True)
+
+    post_type = models.CharField(max_length=50,default='services',choices=[
+        ('adoption', 'Adoption'),
+        ('lost_found', 'Lost & Found'),
+        ('services', 'Services'),
+    ])
 
     def __str__(self):
         return self.title

@@ -38,7 +38,6 @@ const fetchPosts = async () => {
   try {
     setLoading(true);
     const response = await api.get('/posts/');
-    console.log(" API Response:", response.data.results);
     setPosts(response.data.results);
   } catch (error) {
     console.error(" Error fetching posts:", error);
@@ -52,7 +51,7 @@ const fetchPosts = async () => {
   const handleSearch = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`posts/?search=${searchTerm}`);
+      const response = await api.get(`/admins/posts/?search=${searchTerm}`);
       console.log("📌 Search API Response:", response.data.results);
       setPosts(response.data.results);
     } catch (error) {

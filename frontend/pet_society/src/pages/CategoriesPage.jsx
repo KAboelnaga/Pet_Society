@@ -24,7 +24,7 @@ const CategoriesPage = () => {
   const [categories, setCategories] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '', is_active: true });
+  const [formData, setFormData] = useState({ name: ''  });
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' });
 
@@ -36,7 +36,6 @@ const fetchCategories = async () => {
   try {
     setLoading(true);
     const response = await api.get('/categories/');
-    console.log("📌 Categories API Response:", response.data);
     setCategories(response.data.results);
   } catch (error) {
     console.error("❌ Error fetching categories:", error);
@@ -52,14 +51,12 @@ const fetchCategories = async () => {
       setFormData({
         id: category.id,
         name: category.name,
-        description: category.description || '',
-        is_active: category.is_active,
+
       });
-      console.log("📝 Submitting formData:", formData);
 
     } else {
       setEditingCategory(null);
-      setFormData({ name: '', description: '', is_active: true });
+      setFormData({ name: '',  });
     }
     setShowModal(true);
   };
@@ -67,7 +64,7 @@ const fetchCategories = async () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingCategory(null);
-    setFormData({ name: '', description: '', is_active: true });
+    setFormData({ name: '',  });
   };
 
   const handleSubmit = async () => {
@@ -76,7 +73,7 @@ const fetchCategories = async () => {
         await api.put(`/categories/${editingCategory.id}/`, formData);
         showAlert('Category updated successfully');
       } else {
-        await api.post('/categories/', formData);
+        await api.post('/categories/create/', formData);
         showAlert('Category created successfully');
       }
       handleCloseModal();
@@ -163,8 +160,8 @@ const fetchCategories = async () => {
               <Table responsive className="mb-0">
                 <thead className="table-light">
                   <tr>
+                    
                     <th>Name</th>
-                    <th>Description</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -174,11 +171,7 @@ const fetchCategories = async () => {
                       <td>
                         <strong>{category.name}</strong>
                       </td>
-                      <td>
-                        {category.description || (
-                          <span className="text-muted">No description</span>
-                        )}
-                      </td>
+                     
                       <td>
                         <div className="d-flex gap-2">
                           <Button
@@ -209,7 +202,7 @@ const fetchCategories = async () => {
         <Modal show={showModal} onHide={handleCloseModal} centered>
           <Modal.Header closeButton>
             <Modal.Title>
-              {editingCategory ? 'Edit Category' : 'Add New Category'}
+              {editingCategory ? 'Edit Category' : 'Add New Cegory'}
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
@@ -225,26 +218,7 @@ const fetchCategories = async () => {
                 />
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter category description (optional)"
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Check
-                  type="switch"
-                  id="active-switch"
-                  label="Active"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                />
-              </Form.Group>
+              
             </Form>
           </Modal.Body>
           <Modal.Footer>

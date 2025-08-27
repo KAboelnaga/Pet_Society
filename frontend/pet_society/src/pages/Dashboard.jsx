@@ -26,7 +26,6 @@ useEffect(() => {
 const fetchStats = async () => {
   try {
     const response = await api.get('/admins/dashboard/stats/');
-    console.log(" Stats API Response:", response.data); 
     setStats(response.data);
   } catch (error) {
     console.error(' Error fetching stats:', error);

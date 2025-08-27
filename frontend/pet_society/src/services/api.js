@@ -66,7 +66,7 @@ export const authAPI = {
   getAllUsers: () => authApi.get('/users/'),
   getSearchedUsers: (searchTerm) => authApi.get(`/users/?search=${searchTerm}`),
   getSearchedPosts: (searchTerm) => authApi.get(`/posts/?search=${searchTerm}`),
-  updateUser: (userId, data) => authApi.patch(`/users/${userId}/`, data),
+  updateUser: (userId, data) => authApi.patch(`/api/admins/users/${userId}/update/`, data),
   register: (userData) => authApi.post('/users/register/', userData),
   login: (credentials) => authApi.post('/users/login/', credentials),
   logout: () => authApi.post('/users/logout/'),
