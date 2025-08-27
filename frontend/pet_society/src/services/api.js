@@ -70,6 +70,18 @@ export const authAPI = {
     headers: { "Content-Type": "multipart/form-data" },
   }),
   getUserProfile: (username) => authApi.get(`/users/profile/${username}/`),
+  followUser: (username) => authApi.post(`/users/profile/${username}/follow/`),
+  unfollowUser: (username) => authApi.post(`/users/profile/${username}/unfollow/`),
+};
+
+// Posts API calls
+export const postsAPI = {
+  getUserPosts: (username, page = 1) => api.get(`/posts/?author=${username}&page=${page}`),
+  getAllPosts: (page = 1, category = null) => {
+    let url = `/posts/?page=${page}`;
+    if (category) url += `&category=${category}`;
+    return api.get(url);
+  },
 };
 
 // Helper functions

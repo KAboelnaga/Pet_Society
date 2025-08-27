@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   HeartIcon,
   ChatBubbleLeftIcon,
@@ -10,8 +10,6 @@ import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import EditPostModal from "./EditPostModal";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
-import { Link } from "lucide-react";
-// import {Link } from "react-router-dom";
 
 function PostCard({ post, currentUser }) {
   const navigate = useNavigate();
@@ -112,12 +110,16 @@ function PostCard({ post, currentUser }) {
             {!post.user_image && ((post.author?.[0] || post.username?.[0] || "U").toUpperCase())}
           </div>)}
           <div>
-            <p className="font-semibold">
+            <Link
+              to={`/profile/${post.author || post.username}`}
+              onClick={(e) => e.stopPropagation()}
+              className="font-semibold hover:text-blue-600 transition-colors"
+            >
               {post.author || post.username || "Unknown"}
-            </p>
-            <span className="text-gray-500 text-sm">
+            </Link>
+            <div className="text-gray-500 text-sm">
               {new Date(post.created_at).toLocaleDateString()}
-            </span>
+            </div>
           </div>
         </div>
 
