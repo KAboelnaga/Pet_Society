@@ -3,8 +3,8 @@ import { Container, Navbar, Nav, Button, Badge, Dropdown  } from 'react-bootstra
 import { BsSun, BsMoon, BsBoxArrowRight, BsPersonCircle } from 'react-icons/bs';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-
-const Layout = ({ children, title = 'Pet Society Admin' }) => {
+import { Link } from 'react-router-dom';
+const Layout = ({ children, title = 'Pet Society' }) => {
   const { user, logout } = useAuth();
   const { mode, toggleTheme } = useTheme();
   
@@ -28,9 +28,11 @@ const Layout = ({ children, title = 'Pet Society Admin' }) => {
         }}
       >
         <Container fluid>
+          <Link to="/" className="navbar-brand fw-bold">
           <Navbar.Brand className="fw-bold">
             🐾 {title}
           </Navbar.Brand>
+          </Link>
           {/* Theme Toggle Button */}
          
             <Nav className="ms-auto d-flex align-items-center">

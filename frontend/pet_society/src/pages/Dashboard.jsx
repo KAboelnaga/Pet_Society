@@ -126,7 +126,7 @@ const fetchStats = async () => {
   );
 
   return (
-    <Layout title="Pet Society Admin Dashboard" >
+    <Layout title="Pet Society" >
       <Container fluid className="p-4" style={{ minHeight: '100vh', backgroundColor: theme.colors.background }}>
         
         {/* Welcome Banner Section */}
