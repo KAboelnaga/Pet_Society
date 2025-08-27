@@ -111,7 +111,8 @@ class ChatGroupViewSet(viewsets.ModelViewSet):
                         )
                     else:
                         return Response(
-                            {'error': f'Users {', '.join([f'"{u}"' for u in non_existent_users])} do not exist'},
+                           
+                            {'error': f'Users {", ".join([repr(u) for u in non_existent_users])} do not exist'},
                             status=status.HTTP_400_BAD_REQUEST
                         )
 

@@ -15,6 +15,8 @@ import Dashboard from './pages/Dashboard';
 import CategoriesPage from './pages/CategoriesPage';
 import PostsPage from './pages/PostsPage';
 import UsersPage from './pages/UsersPage';
+import {UserProfile} from './components/profile/UserProfile';
+import UserProfileEdit from './components/profile/UserProfileEdit';
 
 // Chat components (global feature)
 import PetSocietyChat from './components/Chat/PetSocietyChat';
@@ -82,6 +84,12 @@ function AppRoutes() {
         <Route path="/categories" element={<PrivateRoute><CategoriesPage /></PrivateRoute>} />
         <Route path="/posts" element={<PrivateRoute><PostsPage /></PrivateRoute>} />
         <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
+
+        <Route path='/profile/:username' element={<PrivateRoute><UserProfile /></PrivateRoute>} />
+        <Route path='/profile/:username/update' element={<PrivateRoute><UserProfileEdit /></PrivateRoute>} />
+        <Route path="/posts/:id" element={<PrivateRoute><PostDetail /></PrivateRoute>} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       </Routes>
     </Router>
   );

@@ -71,8 +71,12 @@ export const authAPI = {
   login: (credentials) => authApi.post('/users/login/', credentials),
   logout: () => authApi.post('/users/logout/'),
   getProfile: () => authApi.get('/users/profile/'),
-  updateProfile: (data) => authApi.patch('/users/profile/update/', data),
+  updateProfile: (username, data) => authApi.patch(`/users/profile/${username}/update/`, data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }),
   getUserProfile: (username) => authApi.get(`/users/profile/${username}/`),
+  followUser: (username) => authApi.post(`/users/profile/${username}/follow/`),
+  unfollowUser: (username) => authApi.post(`/users/profile/${username}/unfollow/`),
 };
 
 // Chat API functions - Pure chat functionality
@@ -133,6 +137,16 @@ export const chatAPI = {
   // Invite user to group
   inviteUser: (groupId, username) =>
     api.post(`/chats/groups/${groupId}/invite_user/`, { username: username }),
+};
+
+// Posts API calls
+export const postsAPI = {
+  getUserPosts: (username, page = 1) => api.get(`/posts/?author=${username}&page=${page}`),
+  getAllPosts: (page = 1, category = null) => {
+    let url = `/posts/?page=${page}`;
+    if (category) url += `&category=${category}`;
+    return api.get(url);
+  },
 };
 
 // Helper functions

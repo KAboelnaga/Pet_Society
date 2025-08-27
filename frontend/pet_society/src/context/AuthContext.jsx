@@ -25,6 +25,8 @@ export const AuthProvider = ({ children }) => {
         try {
           const response = await authAPI.getProfile();
           setUser(response.data);
+          console.log("User profile fetched:", response.data);
+          localStorage.setItem('user', JSON.stringify(response.data)); 
           setIsAuthenticated(true);
         } catch (error) {
           console.error('Auth check failed:', error);

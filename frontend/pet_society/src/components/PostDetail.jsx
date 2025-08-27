@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { HeartIcon, ChatBubbleLeftIcon, ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { HeartIcon, ChatBubbleLeftIcon, ArrowLeftIcon, TrashIcon, UserIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { getAbsoluteImageUrl } from '../config/api';
 import '../App.css';
 
 const PostDetail = () => {
@@ -269,16 +270,40 @@ const PostDetail = () => {
       {/* Post content */}
       <div className="post-detail">
         <div className="post-header">
-          <h1 className="post-title">{post.title}</h1>
-          <div className="post-meta">
-            <span className="post-author">by {post.author}</span>
-            <span className="post-category">
-              in {post.category_name || 'Uncategorized'}
-            </span>
-            <span className="post-date">
-              {formatDate(post.created_at)}
-            </span>
+          <div className="post-author-info">
+            <div
+              className="author-avatar clickable-avatar"
+              onClick={() => navigate(`/profile/${post.username || post.author}`)}
+            >
+              {post.user_image ? (
+                <img
+                  src={getAbsoluteImageUrl(post.user_image)}
+                  alt={post.username || post.author}
+                  className="author-image"
+                />
+              ) : (
+                <div className="author-image-placeholder">
+                  <UserIcon className="w-6 h-6 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="author-details">
+              <div
+                className="author-name clickable-name"
+                onClick={() => navigate(`/profile/${post.username || post.author}`)}
+              >
+                {post.username || post.author}
+              </div>
+              <div className="post-timestamp">{formatDate(post.created_at)}</div>
+            </div>
           </div>
+          <div className="post-category-badge">
+            {post.category_name || 'Uncategorized'}
+          </div>
+        </div>
+
+        <div className="post-title-section">
+          <h1 className="post-title">{post.title}</h1>
         </div>
 
         {post.image && (
@@ -319,21 +344,36 @@ const PostDetail = () => {
         
         {/* Add comment form */}
         {isAuthenticated && !replyTo && (
-          <form onSubmit={handleCommentSubmit} className="comment-form">
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write a comment..."
-              className="comment-input"
-              rows="3"
-            />
-            <button 
-              type="submit" 
-              className="comment-submit-btn"
-            >
-              Post Comment
-            </button>
-          </form>
+          <div className="comment-form-container">
+            <div className="comment-form-avatar">
+              {user?.image ? (
+                <img
+                  src={getAbsoluteImageUrl(user.image)}
+                  alt={user.username}
+                  className="comment-author-image"
+                />
+              ) : (
+                <div className="comment-author-image-placeholder">
+                  <UserIcon className="w-5 h-5 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <form onSubmit={handleCommentSubmit} className="comment-form">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a comment..."
+                className="comment-input"
+                rows="3"
+              />
+              <button
+                type="submit"
+                className="comment-submit-btn"
+              >
+                Post Comment
+              </button>
+            </form>
+          </div>
         )}
         
         {/* Reply mode indicator */}
@@ -359,41 +399,66 @@ const PostDetail = () => {
           ) : (
             (Array.isArray(comments) ? comments : []).map(comment => (
               <div key={comment.id} className="comment">
-                <div className="comment-header">
-                  <div className="comment-header-left">
-                    <span className="comment-author">{comment.author.username}</span>
-                    <span className="comment-date">{formatDate(comment.created_at)}</span>
+                <div className="comment-main">
+                  <div
+                    className="comment-avatar clickable-avatar"
+                    onClick={() => navigate(`/profile/${comment.author.username}`)}
+                  >
+                    {comment.author.image ? (
+                      <img
+                        src={getAbsoluteImageUrl(comment.author.image)}
+                        alt={comment.author.username}
+                        className="comment-author-image"
+                      />
+                    ) : (
+                      <div className="comment-author-image-placeholder">
+                        <UserIcon className="w-5 h-5 text-gray-400" />
+                      </div>
+                    )}
                   </div>
-                  <div className="comment-header-right">
-                    {/* Delete button for comments */}
-                    {canDeleteComment(comment) && (
+                  <div className="comment-body">
+                    <div className="comment-header">
+                      <div className="comment-header-left">
+                        <span
+                          className="comment-author clickable-name"
+                          onClick={() => navigate(`/profile/${comment.author.username}`)}
+                        >
+                          {comment.author.username}
+                        </span>
+                        <span className="comment-date">{formatDate(comment.created_at)}</span>
+                      </div>
+                      <div className="comment-header-right">
+                        {/* Delete button for comments */}
+                        {canDeleteComment(comment) && (
+                          <button
+                            onClick={() => setDeleteConfirm({ id: comment.id, type: 'comment', content: comment.content })}
+                            className="delete-button"
+                            title="Delete comment"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="comment-content">
+                      <p>{comment.content}</p>
+                    </div>
+
+                    {/* Reply button */}
+                    {isAuthenticated && (
                       <button
-                        onClick={() => setDeleteConfirm({ id: comment.id, type: 'comment', content: comment.content })}
-                        className="delete-button"
-                        title="Delete comment"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setReplyTo(comment);
+                        }}
+                        className="reply-button"
                       >
-                        <TrashIcon className="w-4 h-4" />
+                        Reply
                       </button>
                     )}
                   </div>
                 </div>
-                <div className="comment-content">
-                  <p>{comment.content}</p>
-                </div>
-                
-                {/* Reply button */}
-                {isAuthenticated && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setReplyTo(comment);
-                    }}
-                    className="reply-button"
-                  >
-                    Reply
-                  </button>
-                )}
 
                 {/* Reply form */}
                 {replyTo?.id === comment.id && (
@@ -431,26 +496,51 @@ const PostDetail = () => {
                   <div className="replies">
                     {comment.replies.map(reply => (
                       <div key={reply.id} className="reply">
-                        <div className="comment-header">
-                          <div className="comment-header-left">
-                            <span className="comment-author">{reply.author.username}</span>
-                            <span className="comment-date">{formatDate(reply.created_at)}</span>
-                          </div>
-                          <div className="comment-header-right">
-                            {/* Delete button for replies */}
-                            {canDeleteComment(reply) && (
-                              <button
-                                onClick={() => setDeleteConfirm({ id: reply.id, type: 'reply', content: reply.content })}
-                                className="delete-button"
-                                title="Delete reply"
-                              >
-                                <TrashIcon className="w-4 h-4" />
-                              </button>
+                        <div className="comment-main">
+                          <div
+                            className="comment-avatar clickable-avatar"
+                            onClick={() => navigate(`/profile/${reply.author.username}`)}
+                          >
+                            {reply.author.image ? (
+                              <img
+                                src={getAbsoluteImageUrl(reply.author.image)}
+                                alt={reply.author.username}
+                                className="comment-author-image"
+                              />
+                            ) : (
+                              <div className="comment-author-image-placeholder">
+                                <UserIcon className="w-4 h-4 text-gray-400" />
+                              </div>
                             )}
                           </div>
-                        </div>
-                        <div className="comment-content">
-                          <p>{reply.content}</p>
+                          <div className="comment-body">
+                            <div className="comment-header">
+                              <div className="comment-header-left">
+                                <span
+                                  className="comment-author clickable-name"
+                                  onClick={() => navigate(`/profile/${reply.author.username}`)}
+                                >
+                                  {reply.author.username}
+                                </span>
+                                <span className="comment-date">{formatDate(reply.created_at)}</span>
+                              </div>
+                              <div className="comment-header-right">
+                                {/* Delete button for replies */}
+                                {canDeleteComment(reply) && (
+                                  <button
+                                    onClick={() => setDeleteConfirm({ id: reply.id, type: 'reply', content: reply.content })}
+                                    className="delete-button"
+                                    title="Delete reply"
+                                  >
+                                    <TrashIcon className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="comment-content">
+                              <p>{reply.content}</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}

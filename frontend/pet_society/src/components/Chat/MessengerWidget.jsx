@@ -36,19 +36,23 @@ import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../contexts/ChatContext';
 
 const MessengerWidget = () => {
-  const [chatWindows, setChatWindows] = useState([]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
   const [newChatUsername, setNewChatUsername] = useState('');
-  
+
   const { user } = useAuth();
-  const { 
-    conversations, 
-    isMessengerOpen, 
-    toggleMessenger, 
+  const {
+    conversations,
+    activeChats,
+    isMessengerOpen,
+    toggleMessenger,
     loadConversations,
-    markAsRead
-  } = useChat(); // Use conversations from ChatContext
+    markAsRead,
+    openChat,
+    closeChat,
+    minimizeChat,
+    startPrivateChat
+  } = useChat(); // Use conversations and activeChats from ChatContext
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -82,53 +86,7 @@ const MessengerWidget = () => {
   }, [user, loadConversations, markAsRead]);
 
   const openChatWindow = async (conversation) => {
-    // Check if chat window is already open
-    const existingWindow = chatWindows.find(window => window.id === conversation.id);
-    if (existingWindow) {
-      // Focus existing window and mark as not minimized
-      setChatWindows(prev =>
-        prev.map(window =>
-          window.id === conversation.id
-            ? { ...window, isMinimized: false }
-            : window
-        )
-      );
-    } else {
-      // Add new chat window
-      const newWindow = {
-        id: conversation.id,
-        conversation,
-        isMinimized: false,
-      };
-
-      setChatWindows(prev => [...prev, newWindow]);
-    }
-
-    // Mark messages as read when opening chat
-    markAsRead(conversation.id);
-
-    // Unread count is now handled by ChatContext via markAsRead
-
-    // Mark messages as read via API
-    try {
-      await chatAPI.markAsRead(conversation.id);
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-    }
-  };
-
-  const closeChatWindow = (windowId) => {
-    setChatWindows(prev => prev.filter(window => window.id !== windowId));
-  };
-
-  const minimizeChatWindow = (windowId) => {
-    setChatWindows(prev => 
-      prev.map(window => 
-        window.id === windowId 
-          ? { ...window, isMinimized: !window.isMinimized }
-          : window
-      )
-    );
+    openChat(conversation);
   };
 
       const [errorMessage, setErrorMessage] = useState('');
@@ -179,20 +137,9 @@ const MessengerWidget = () => {
             return;
           }
 
-          // Create new private chat
-          const chatData = {
-            name: `private-${Date.now()}`,
-            is_private: true,
-            invite_user: targetUsername,
-          };
-
-          const response = await chatAPI.createChatGroup(chatData);
-          const newConversation = response.data;
-
-          // Reload conversations to get updated data from backend
-          loadConversations();
-
-          openChatWindow(newConversation);
+          // Create new private chat using ChatContext
+          const newConversation = await startPrivateChat(targetUsername);
+          openChat(newConversation);
         } else {
           // Multiple users = Group chat (always create new)
           const chatData = {
@@ -478,14 +425,14 @@ const MessengerWidget = () => {
       </Drawer>
 
       {/* Chat Windows */}
-      {chatWindows.map((window, index) => (
+      {activeChats.map((chat, index) => (
         <ChatWindow
-          key={window.id}
-          conversation={window.conversation}
-          isMinimized={window.isMinimized}
+          key={chat.id}
+          conversation={chat}
+          isMinimized={chat.isMinimized || false}
           position={index}
-          onClose={() => closeChatWindow(window.id)}
-          onMinimize={() => minimizeChatWindow(window.id)}
+          onClose={() => closeChat(chat.id)}
+          onMinimize={() => minimizeChat(chat.id)}
         />
       ))}
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   HeartIcon,
   ChatBubbleLeftIcon,
@@ -97,20 +97,32 @@ function PostCard({ post, currentUser }) {
     >
       {/* Header: Author + Date */}
       <div className="flex items-center justify-between mb-4">
+        
         <div className="flex items-center gap-3">
           {/* Avatar with first letter */}
-          <div className="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center font-bold text-white">
-            {(post.author?.[0] || post.username?.[0] || "U").toUpperCase()}
-          </div>
+                    {post.user_image && (<img
+                      src={post.user_image}
+                      alt={(post.author?.[0] || post.username?.[0] || "U").toUpperCase()}
+                      className="w-10 h-10 rounded-full object-cover bg-transparent"
+                    />)}
+          {!post.user_image &&(<div className="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center font-bold text-white">
+
+            {!post.user_image && ((post.author?.[0] || post.username?.[0] || "U").toUpperCase())}
+          </div>)}
           <div>
-            <p className="font-semibold">
+            <Link
+              to={`/profile/${post.author || post.username}`}
+              onClick={(e) => e.stopPropagation()}
+              className="font-semibold hover:text-blue-600 transition-colors"
+            >
               {post.author || post.username || "Unknown"}
-            </p>
-            <span className="text-gray-500 text-sm">
+            </Link>
+            <div className="text-gray-500 text-sm">
               {new Date(post.created_at).toLocaleDateString()}
-            </span>
+            </div>
           </div>
         </div>
+
       </div>
 
       {/* Image */}

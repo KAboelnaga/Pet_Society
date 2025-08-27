@@ -83,8 +83,15 @@ class UserSerializer(serializers.ModelSerializer):
     
     def get_is_following(self, obj):
         request = self.context.get('request')
+        print(f"🔍 Serializer - request: {request}")
         if request and hasattr(request, 'user'):
-            return obj.followers.filter(id=request.user.id).exists()
+            print(f"🔍 Serializer - request.user: {request.user}")
+            print(f"🔍 Serializer - is_authenticated: {request.user.is_authenticated}")
+            if request.user.is_authenticated:
+                is_following = obj.followers.filter(id=request.user.id).exists()
+                print(f"🔍 Serializer - is_following: {is_following}")
+                return is_following
+        print(f"🔍 Serializer - returning False (no auth)")
         return False
     
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -126,6 +133,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         instance.image = validated_data.get('image', instance.image)
         instance.bio = validated_data.get('bio', instance.bio)
         instance.location = validated_data.get('location', instance.location)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         instance.save()
         return instance
 
