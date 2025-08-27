@@ -26,6 +26,7 @@
     "crypto-js": "^4.2.0",
     "fl": "^0.1.1",
     "front": "^0.0.1",
+    "lucide-react": "^0.541.0",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",

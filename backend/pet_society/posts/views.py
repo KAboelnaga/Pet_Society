@@ -31,8 +31,12 @@ class PostListAPIView(generics.ListAPIView):
     def get_queryset(self):
         queryset = Post.objects.all().order_by('-created_at')
         category = self.request.query_params.get('category')
+        author = self.request.query_params.get('author')
+
         if category:
             queryset = queryset.filter(category__id=category)
+        if author:
+            queryset = queryset.filter(author__username=author)
         return queryset
 
 
@@ -79,6 +83,17 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        queryset = Post.objects.all().order_by('-created_at')
+        category = self.request.query_params.get('category')
+        author = self.request.query_params.get('author')
+
+        if category:
+            queryset = queryset.filter(category__id=category)
+        if author:
+            queryset = queryset.filter(author__username=author)
+        return queryset
 
     def get_serializer_class(self):
         """Use detailed serializer for retrieve actions"""

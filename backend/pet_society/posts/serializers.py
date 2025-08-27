@@ -13,6 +13,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     # Show username instead of email
     username = serializers.CharField(source="author.username", read_only=True)
+    user_image = serializers.ImageField(source="author.image", read_only=True)
     # Show category name
     category_name = serializers.CharField(source="category.name", read_only=True)
     # Accept category id when writing
@@ -33,6 +34,7 @@ class PostSerializer(serializers.ModelSerializer):
             "category_id",     # write
             "category_name",   # read
             "username",        # read
+            "user_image",
             "created_at",
             "likes_count",
             "comments_count",

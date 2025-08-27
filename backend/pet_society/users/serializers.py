@@ -126,6 +126,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         instance.image = validated_data.get('image', instance.image)
         instance.bio = validated_data.get('bio', instance.bio)
         instance.location = validated_data.get('location', instance.location)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         instance.save()
         return instance
 

@@ -64,11 +64,12 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {user && (
               <div className="flex items-center space-x-3">
+                <Link to={`/profile/${user.username}`}>
                 <div className="flex items-center space-x-2">
                   {user.image && (
                     <img
                       src={user.image}
-                      alt={user.username}
+                      alt={user.first_name}
                       className="w-8 h-8 rounded-full object-cover"
                     />
                   )}
