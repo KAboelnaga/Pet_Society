@@ -19,6 +19,7 @@ import { BsSearch, BsTrash, BsEye, BsArrowLeft, BsFileImage } from 'react-icons/
 import { useTheme } from '../context/ThemeContext';
 import Layout from '../components/Layout';
 import api from '../services/api';
+import { getAbsoluteImageUrl } from '../config/api';
 
 const PostsPage = () => {
   const navigate = useNavigate();
@@ -37,8 +38,10 @@ const PostsPage = () => {
 const fetchPosts = async () => {
   try {
     setLoading(true);
-    const response = await api.get('/posts/');
-    setPosts(response.data.results);
+    const response = await api.get('/admins/posts/?ordering=-created_at');
+    console.log("📌 Initial Posts API Response:", response.data);
+    console.log("📌 First post data:", response.data.results?.[0] || response.data[0]);
+    setPosts(response.data.results || response.data);
   } catch (error) {
     console.error(" Error fetching posts:", error);
     showAlert('Error fetching posts', 'danger');
@@ -51,7 +54,7 @@ const fetchPosts = async () => {
   const handleSearch = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/admins/posts/?search=${searchTerm}`);
+      const response = await api.get(`/admins/posts/?search=${searchTerm}&ordering=-created_at`);
       console.log("📌 Search API Response:", response.data.results);
       setPosts(response.data.results);
     } catch (error) {
@@ -63,42 +66,28 @@ const fetchPosts = async () => {
 
   const handleViewPost = async (postId) => {
     try {
-      const response = await api.get(`posts/${postId}/`);
+      const response = await api.get(`/admins/posts/${postId}/`);
+      console.log("📌 Post Details API Response:", response.data);
       setSelectedPost(response.data);
       setShowViewModal(true);
     } catch (error) {
+      console.error("Error fetching post details:", error);
       showAlert('Error fetching post details', 'danger');
     }
   };
 
 const handleDeletePost = async (postId) => {
-  const token = localStorage.getItem("token");
-  if (!token) return window.alert("Not authorized");
-
   if (!window.confirm("Are you sure you want to delete this post?")) return;
 
   try {
-    const response = await fetch(
-      `http://localhost:8000/api/posts/${postId}/`,
-      {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Token ${token}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+    const response = await api.delete(`/admins/posts/${postId}/delete/`);
+    console.log("📌 Delete Response:", response.data);
 
-    if (response.ok) {
-      window.alert("Post deleted successfully");
-      setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
-    } else {
-      window.alert("Failed to delete post");
-      console.error("Response status:", response.status, await response.text());
-    }
+    showAlert("Post deleted successfully", "success");
+    setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
   } catch (error) {
     console.error("Error deleting post:", error);
-    window.alert("Error deleting post");
+    showAlert(error.response?.data?.message || "Error deleting post", "danger");
   }
 };
 
@@ -112,14 +101,12 @@ const handleDeletePost = async (postId) => {
 
   const getPostTypeColor = (type) => {
     switch (type?.toLowerCase()) {
-      case 'dog':
-        return 'primary';
-      case 'cat':
-        return 'info';
-      case 'bird':
-        return 'warning';
-      case 'fish':
+      case 'adoption':
         return 'success';
+      case 'lost_found':
+        return 'warning';
+      case 'services':
+        return 'primary';
       default:
         return 'secondary';
     }
@@ -127,6 +114,7 @@ const handleDeletePost = async (postId) => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'long',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -212,9 +200,10 @@ const handleDeletePost = async (postId) => {
                 <thead className="table-light">
                   <tr>
                     <th>Post</th>
-                    <th>Animal Type</th>
-                    <th>Owner</th>
-                    <th>Status</th>
+                    <th>Post Type</th>
+                    <th>Author</th>
+                    <th>Category</th>
+                    <th>Likes</th>
                     <th>Created</th>
                     <th>Actions</th>
                   </tr>
@@ -226,13 +215,20 @@ const handleDeletePost = async (postId) => {
                         <div className="d-flex align-items-center">
                           <div className="me-3">
                             {post.image ? (
-                              <Image 
-                                src={post.image} 
+                              <Image
+                                src={getAbsoluteImageUrl(post.image)}
                                 alt={post.title}
                                 width={50}
                                 height={50}
                                 className="rounded"
                                 style={{ objectFit: 'cover' }}
+                                onError={(e) => {
+                                  console.error('Image failed to load:', post.image, 'Absolute URL:', getAbsoluteImageUrl(post.image));
+                                  e.target.style.display = 'none';
+                                }}
+                                onLoad={() => {
+                                  console.log('Image loaded successfully:', getAbsoluteImageUrl(post.image));
+                                }}
                               />
                             ) : (
                               <div 
@@ -252,27 +248,32 @@ const handleDeletePost = async (postId) => {
                             <strong>{post.title}</strong>
                             <br />
                             <small className="text-muted">
-                              {post.description?.substring(0, 50)}
-                              {post.description?.length > 50 && '...'}
+                              {post.content?.substring(0, 50)}
+                              {post.content?.length > 50 && '...'}
                             </small>
                           </div>
                         </div>
                       </td>
                       <td>
-                        <Badge bg={getPostTypeColor(post.animal_type)}>
-                          {post.animal_type}
+                        <Badge bg={getPostTypeColor(post.post_type)}>
+                          {post.post_type || 'services'}
                         </Badge>
                       </td>
                       <td>
                         <div>
-                          <strong>{post.owner?.username}</strong>
+                          <strong>{post.user?.username || post.user}</strong>
                           <br />
-                          <small className="text-muted">{post.owner?.email}</small>
+                          <small className="text-muted">{post.user?.email}</small>
                         </div>
                       </td>
                       <td>
-                        <Badge bg={post.is_active ? 'success' : 'secondary'}>
-                          {post.is_active ? 'Active' : 'Inactive'}
+                        <div>
+                          <strong>{post.category?.name || post.category}</strong>
+                        </div>
+                      </td>
+                      <td>
+                        <Badge bg="info">
+                          {post.likes_count || 0} likes
                         </Badge>
                       </td>
                       <td>
@@ -324,8 +325,8 @@ const handleDeletePost = async (postId) => {
                 <Row>
                   <Col md={6}>
                     {selectedPost.image ? (
-                      <Image 
-                        src={selectedPost.image} 
+                      <Image
+                        src={getAbsoluteImageUrl(selectedPost.image)}
                         alt={selectedPost.title}
                         fluid
                         className="rounded mb-3"
@@ -345,30 +346,35 @@ const handleDeletePost = async (postId) => {
                   </Col>
                   <Col md={6}>
                     <h5>{selectedPost.title}</h5>
-                    <p className="text-muted">{selectedPost.description}</p>
-                    
+                    <p className="text-muted">{selectedPost.content}</p>
+
                     <div className="mb-3">
-                      <strong>Animal Type:</strong>
-                      <Badge bg={getPostTypeColor(selectedPost.animal_type)} className="ms-2">
-                        {selectedPost.animal_type}
+                      <strong>Post Type:</strong>
+                      <Badge bg={getPostTypeColor(selectedPost.post_type)} className="ms-2">
+                        {selectedPost.post_type || 'services'}
                       </Badge>
                     </div>
-                    
+
                     <div className="mb-3">
-                      <strong>Owner:</strong> {selectedPost.owner?.username}
+                      <strong>Author:</strong> {selectedPost.user?.username || selectedPost.user}
                     </div>
-                    
+
                     <div className="mb-3">
-                      <strong>Status:</strong>
-                      <Badge bg={selectedPost.is_active ? 'success' : 'secondary'} className="ms-2">
-                        {selectedPost.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
+                      <strong>Category:</strong> {selectedPost.category?.name || selectedPost.category}
                     </div>
-                    
+
+                    <div className="mb-3">
+                      <strong>Likes:</strong> {selectedPost.likes_count || 0}
+                    </div>
+
+                    <div className="mb-3">
+                      <strong>Comments:</strong> {selectedPost.comments_count || 0}
+                    </div>
+
                     <div className="mb-3">
                       <strong>Created:</strong> {formatDate(selectedPost.created_at)}
                     </div>
-                    
+
                     {selectedPost.updated_at && (
                       <div>
                         <strong>Updated:</strong> {formatDate(selectedPost.updated_at)}

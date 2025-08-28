@@ -18,7 +18,6 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework_simplejwt.views import TokenRefreshView
 
 
 urlpatterns = [
@@ -34,7 +33,7 @@ urlpatterns = [
     path('users/', include('users.urls', namespace='users')),
     path('api/auth/', include('users.api_urls')),  # Different endpoint for API auth
     path('api/admins/', include('admins.urls', namespace='admins')),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
     
     # Placeholder for followers (when implemented)
     path('followers/', include('followers.urls')),

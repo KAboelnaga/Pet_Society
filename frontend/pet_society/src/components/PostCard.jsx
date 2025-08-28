@@ -9,11 +9,13 @@ import {
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import EditPostModal from "./EditPostModal";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import api from "../services/api";
 
-function PostCard({ post, currentUser }) {
+function PostCard({ post, currentUser, onPostUpdated }) {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { theme } = useTheme();
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -66,23 +68,16 @@ function PostCard({ post, currentUser }) {
     if (!window.confirm("Are you sure you want to delete this post?")) return;
 
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/posts/${post.id}/`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Token ${token}` },
-        }
-      );
+      const response = await api.delete(`posts/${post.id}/`);
 
-      if (response.ok) {
-        alert("Post deleted");
-        window.location.reload();
-      } else {
-        const err = await response.json();
-        alert(err.detail || "Failed to delete post");
-      }
-    } catch (error) {
+      if (response.status === 204 || response.status === 200) {
+        alert("Post deleted successfully!");
+        if (onPostUpdated) {
+          onPostUpdated(); // Trigger refresh instead of page reload
+        }
+    }} catch (error) {
       console.error("Error deleting post:", error);
+      alert(error.response?.data?.detail || "Error deleting post");
     }
   };
 
@@ -92,7 +87,12 @@ function PostCard({ post, currentUser }) {
 
   return (
     <div
-      className="bg-white rounded-2xl shadow p-6 mb-4 relative cursor-pointer"
+      className="rounded-2xl shadow p-6 mb-4 relative cursor-pointer transition-all duration-300"
+      style={{
+        backgroundColor: theme.colors.background,
+        borderColor: theme.colors.textSecondary + '30',
+        border: `1px solid ${theme.colors.textSecondary}30`,
+      }}
       onClick={handlePostClick}
     >
       {/* Header: Author + Date */}
@@ -113,12 +113,26 @@ function PostCard({ post, currentUser }) {
             <Link
               to={`/profile/${post.author || post.username}`}
               onClick={(e) => e.stopPropagation()}
-              className="font-semibold hover:text-blue-600 transition-colors"
+              className="font-semibold hover:text-blue-600 transition-all duration-200 hover:scale-110 no-underline"
+              style={{
+                color: theme.colors.text,
+                textDecoration: 'none'
+              }}
             >
               {post.author || post.username || "Unknown"}
             </Link>
-            <div className="text-gray-500 text-sm">
-              {new Date(post.created_at).toLocaleDateString()}
+            <div
+              className="text-sm"
+              style={{ color: theme.colors.textSecondary }}
+            >
+              {new Date(post.created_at).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
             </div>
           </div>
         </div>
@@ -136,14 +150,28 @@ function PostCard({ post, currentUser }) {
 
       {/* Category */}
       {post.category_name && (
-        <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+        <span
+          className="inline-block text-xs font-semibold px-3 py-1 rounded-full mb-4"
+          style={{
+            backgroundColor: theme.colors.primary + '20',
+            color: theme.colors.primary,
+          }}
+        >
           {post.category_name}
         </span>
       )}
 
       {/* Title + Content */}
-      <h2 className="text-xl font-bold mb-2">{post.title}</h2>
-      <p className="text-gray-700 mb-4">
+      <h2
+        className="text-xl font-bold mb-2"
+        style={{ color: theme.colors.text }}
+      >
+        {post.title}
+      </h2>
+      <p
+        className="mb-4"
+        style={{ color: theme.colors.textSecondary }}
+      >
         {post.content.length > 100
           ? post.content.slice(0, 100) + "..."
           : post.content}
@@ -202,6 +230,7 @@ function PostCard({ post, currentUser }) {
         isOpen={isEditing}
         post={post}
         onClose={() => setIsEditing(false)}
+        onPostUpdated={onPostUpdated}
       />
     </div>
   );

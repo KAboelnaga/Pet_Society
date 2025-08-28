@@ -4,8 +4,10 @@ import {
   CheckIcon,
   ArrowUturnLeftIcon,
 } from "@heroicons/react/24/outline";
+import { API_CONFIG } from "../config/api";
+import { useTheme } from "../context/ThemeContext";
 
-const EditPostModal = ({ isOpen, onClose, post }) => {
+const EditPostModal = ({ isOpen, onClose, post, onPostUpdated }) => {
   const [title, setTitle] = useState(post?.title || "");
   const [content, setContent] = useState(post?.content || "");
   const [categoryId, setCategoryId] = useState("");
@@ -14,12 +16,13 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
   const [preview, setPreview] = useState(null);
 
   const fileInputRef = useRef();
+  const { theme } = useTheme();
 
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/categories/");
+        const res = await fetch(`${API_CONFIG.BASE_URL}/categories/`);
         const data = await res.json();
         setCategories(Array.isArray(data) ? data : data.results || []);
       } catch (err) {
@@ -81,7 +84,7 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
       if (image) formData.append("image", image);
 
       const response = await fetch(
-        `http://localhost:8000/api/posts/${post.id}/`,
+        `${API_CONFIG.BASE_URL}/posts/${post.id}/`,
         {
           method: "PUT",
           headers: {
@@ -94,7 +97,9 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
       if (response.ok) {
         alert("Post updated successfully!");
         onClose();
-        window.location.reload();
+        if (onPostUpdated) {
+          onPostUpdated(); // Trigger refresh via callback
+        }
       } else {
         const err = await response.json();
         console.error(err);
@@ -125,17 +130,27 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
       onClick={handleCancel}
     >
       <div
-        className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg relative"
+        className="rounded-xl p-6 w-full max-w-md shadow-lg relative"
+        style={{
+          backgroundColor: theme.colors.background,
+          border: `1px solid ${theme.colors.textSecondary}30`,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={handleCancel}
-          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+          className="absolute top-3 right-3 hover:opacity-70 transition-opacity"
+          style={{ color: theme.colors.textSecondary }}
         >
           <XMarkIcon className="h-6 w-6" />
         </button>
 
-        <h2 className="text-xl font-semibold mb-4">Edit Post</h2>
+        <h2
+          className="text-xl font-semibold mb-4"
+          style={{ color: theme.colors.text }}
+        >
+          Edit Post
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Category Dropdown */}
@@ -144,6 +159,11 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
             onChange={(e) => setCategoryId(e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.textSecondary + '50',
+              color: theme.colors.text,
+            }}
           >
             <option value="">Select Category</option>
             {categories.map((cat) => (
@@ -160,6 +180,11 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
             onChange={(e) => setTitle(e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.textSecondary + '50',
+              color: theme.colors.text,
+            }}
           />
 
           <textarea
@@ -168,6 +193,11 @@ const EditPostModal = ({ isOpen, onClose, post }) => {
             onChange={(e) => setContent(e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2 h-32"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.textSecondary + '50',
+              color: theme.colors.text,
+            }}
           />
 
           {/* Large Image Preview */}

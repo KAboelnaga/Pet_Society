@@ -1,8 +1,8 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8000/api',
-  BACKEND_URL: 'http://localhost:8000',
-  WEBSOCKET_URL: 'ws://localhost:8000/ws',
+  BASE_URL: 'http://127.0.0.1:8000/api',
+  BACKEND_URL: 'http://127.0.0.1:8000',
+  WEBSOCKET_URL: 'ws://127.0.0.1:8000/ws',
 };
 
 // Helper function to convert relative media URLs to absolute URLs

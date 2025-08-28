@@ -14,7 +14,7 @@ import {
   Avatar,
   Chip,
   Divider,
-  useTheme,
+  useTheme as useMuiTheme,
   useMediaQuery,
   Dialog,
   DialogTitle,
@@ -30,17 +30,21 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import ChatWindow from './ChatWindow';
+import UserSearchInput from './UserSearchInput';
 import { chatAPI } from '../../services/api';
 import globalWebSocketService from '../../services/globalWebSocket';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../contexts/ChatContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const MessengerWidget = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
   const [newChatUsername, setNewChatUsername] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState([]);
 
   const { user } = useAuth();
+  const { theme } = useTheme();
   const {
     conversations,
     activeChats,
@@ -53,8 +57,8 @@ const MessengerWidget = () => {
     minimizeChat,
     startPrivateChat
   } = useChat(); // Use conversations and activeChats from ChatContext
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const muiTheme = useMuiTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
 
   // Effect to ensure component re-renders when ChatContext conversations change
   useEffect(() => {
@@ -93,13 +97,21 @@ const MessengerWidget = () => {
 
       const handleStartNewChat = async () => {
           setErrorMessage(''); // Reset error message
-    if (newChatUsername.trim()) {
+
+    // Use selected users if available, otherwise parse the input
+    let usernames = [];
+    if (selectedUsers.length > 0) {
+      usernames = selectedUsers.map(user => user.username);
+    } else if (newChatUsername.trim()) {
+      // Parse usernames (split by comma and clean up)
+      usernames = newChatUsername
+        .split(',')
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
+    }
+
+    if (usernames.length > 0) {
       try {
-        // Parse usernames (split by comma and clean up)
-        const usernames = newChatUsername
-          .split(',')
-          .map(name => name.trim())
-          .filter(name => name.length > 0);
 
         if (usernames.length === 1) {
           // Single user = Private chat
@@ -158,6 +170,7 @@ const MessengerWidget = () => {
         }
 
         setNewChatUsername('');
+        setSelectedUsers([]);
         setNewChatDialogOpen(false);
       } catch (error) {
         console.error('Error starting new chat:', error);
@@ -233,7 +246,8 @@ const MessengerWidget = () => {
             width: isMobile ? '100%' : 380,
             maxWidth: '100vw',
             borderRadius: isMobile ? 0 : '16px 0 0 16px',
-            background: 'linear-gradient(180deg, #fafafa 0%, #ffffff 100%)',
+            backgroundColor: theme.colors.background,
+            color: theme.colors.text,
           },
         }}
       >
@@ -243,7 +257,7 @@ const MessengerWidget = () => {
             position="static"
             elevation={0}
             sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: theme.colors.primary,
               borderRadius: isMobile ? 0 : '16px 0 0 0',
             }}
           >
@@ -375,7 +389,7 @@ const MessengerWidget = () => {
                           sx={{
                             fontWeight: conversation.unread_count ? 600 : 500,
                             fontSize: '0.95rem',
-                            color: conversation.unread_count ? '#1f2937' : '#374151',
+                            color: theme.colors.text,
                             mb: 0.5,
                           }}
                           noWrap
@@ -386,7 +400,7 @@ const MessengerWidget = () => {
                           variant="body2"
                           sx={{
                             fontSize: '0.85rem',
-                            color: '#6b7280',
+                            color: theme.colors.textSecondary,
                             fontWeight: conversation.unread_count ? 500 : 400,
                           }}
                           noWrap
@@ -441,42 +455,52 @@ const MessengerWidget = () => {
         open={newChatDialogOpen}
         onClose={() => {
           setNewChatDialogOpen(false);
+          setNewChatUsername('');
+          setSelectedUsers([]);
           setErrorMessage(''); // Clear error when dialog closes
         }}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: theme.colors.background,
+            color: theme.colors.text,
+          }
+        }}
       >
-        <DialogTitle>Start New Chat</DialogTitle>
+        <DialogTitle style={{ color: theme.colors.text }}>Start New Chat</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Username"
-            fullWidth
-            variant="outlined"
+          <UserSearchInput
             value={newChatUsername}
-            onChange={(e) => {
-              setNewChatUsername(e.target.value);
+            onChange={(value) => {
+              setNewChatUsername(value);
               if (errorMessage) setErrorMessage(''); // Clear error when user types
             }}
-            helperText={errorMessage || "Enter username for private chat, or multiple usernames separated by commas for group chat (e.g., 'alice, bob, khalifa')"}
-            error={!!errorMessage}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleStartNewChat();
+            onUserSelect={(users) => {
+              if (Array.isArray(users)) {
+                setSelectedUsers(users);
+              } else {
+                setSelectedUsers([users]);
+                setNewChatUsername(users.username);
               }
             }}
+            placeholder="Search for users to chat with..."
+            error={!!errorMessage}
+            helperText={errorMessage || "Search and select users for private or group chat"}
+            multiple={true}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => {
             setNewChatDialogOpen(false);
+            setNewChatUsername('');
+            setSelectedUsers([]);
             setErrorMessage(''); // Clear error when canceling
           }}>Cancel</Button>
           <Button
             onClick={handleStartNewChat}
             variant="contained"
-            disabled={!newChatUsername.trim()}
+            disabled={!newChatUsername.trim() && selectedUsers.length === 0}
             sx={{
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               '&:hover': {

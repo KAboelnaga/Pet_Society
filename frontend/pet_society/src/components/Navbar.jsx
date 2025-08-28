@@ -2,10 +2,13 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useChat } from "../contexts/ChatContext";
+import { useTheme } from "../context/ThemeContext";
+import { BsSun, BsMoon } from "react-icons/bs";
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { unreadCount, toggleMessenger } = useChat();
+  const { mode, toggleTheme, theme } = useTheme();
 
   const handleLogout = async () => {
     await logout();
@@ -17,16 +20,26 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm">
+    <nav
+      className="border-b shadow-sm transition-all duration-300"
+      style={{
+        backgroundColor: theme.colors.background,
+        borderColor: theme.colors.textSecondary + '30',
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo/Brand */}
           <div className="flex items-center">
             <Link
               to="/"
-              className="text-xl font-bold text-gray-900 hover:text-gray-700"
+              className="text-xl font-bold transition-all duration-200 hover:scale-105 no-underline"
+              style={{
+                color: theme.colors.text,
+                textDecoration: 'none',
+              }}
             >
-              Pet Society
+              🐾 Pet Society
             </Link>
           </div>
 
@@ -35,7 +48,11 @@ const Navbar = () => {
             {/* Chat Button */}
             <button
               onClick={toggleMessenger}
-              className="relative text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
+              className="relative px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
+              style={{
+                color: theme.colors.text,
+                backgroundColor: 'transparent',
+              }}
             >
               {/* Chat Icon */}
               <svg
@@ -65,16 +82,23 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {user && (
               <div className="flex items-center space-x-3">
-                <Link to={`/profile/${user.username}`}>
+                <Link
+                  to={`/profile/${user.username}`}
+                  className="transition-all duration-200 hover:scale-105 no-underline"
+                  style={{ textDecoration: 'none' }}
+                >
                   <div className="flex items-center space-x-2">
                     {user.image && (
                       <img
                         src={user.image}
                         alt={user.first_name}
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-8 h-8 rounded-full object-cover transition-all duration-200 hover:ring-2 hover:ring-blue-300"
                       />
                     )}
-                    <span className="text-sm font-medium text-gray-700">
+                    <span
+                      className="text-sm font-medium transition-colors duration-200"
+                      style={{ color: theme.colors.text }}
+                    >
                       {user.first_name} {user.last_name}
                     </span>
                   </div>
@@ -84,16 +108,39 @@ const Navbar = () => {
                     <div className="flex items-center">
                       <Link
                         to="/dashboard"
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                        className="px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg no-underline"
+                        style={{
+                          background: theme.gradients.primary,
+                          color: 'white',
+                          textDecoration: 'none',
+                        }}
                       >
                         Admin Panel
                       </Link>
                     </div>
                   )}
-                
+
+                {/* Theme Toggle Button */}
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-md transition-all duration-200 hover:scale-110"
+                  style={{
+                    color: theme.colors.text,
+                    backgroundColor: theme.colors.surface,
+                    border: `1px solid ${theme.colors.textSecondary}30`,
+                  }}
+                  title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
+                >
+                  {mode === 'light' ? <BsMoon size={18} /> : <BsSun size={18} />}
+                </button>
+
                 <button
                   onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 hover:scale-105"
+                  style={{
+                    backgroundColor: theme.colors.danger,
+                    color: 'white',
+                  }}
                 >
                   Logout
                 </button>

@@ -8,6 +8,7 @@ import {
   Chip,
 } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import Message from './Message';
 
 const MessageList = ({ 
@@ -19,6 +20,7 @@ const MessageList = ({
   compact = false 
 }) => {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const formatMessageTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -62,13 +64,15 @@ const MessageList = ({
   }
 
   return (
-    <Box 
+    <Box
       sx={{
         flex: 1,
         p: compact ? 0.5 : 1,
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100%',
+        backgroundColor: theme.colors.surface,
+        color: theme.colors.text,
       }}
     >
       {/* Loading older messages indicator */}
@@ -80,7 +84,7 @@ const MessageList = ({
           py={2}
         >
           <CircularProgress size={20} />
-          <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
+          <Typography variant="caption" sx={{ ml: 1, color: theme.colors.textSecondary }}>
             Loading older messages...
           </Typography>
         </Box>
@@ -94,7 +98,7 @@ const MessageList = ({
           alignItems="center"
           py={1}
         >
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+          <Typography variant="caption" sx={{ color: theme.colors.textSecondary, fontSize: '0.75rem' }}>
             Beginning of conversation
           </Typography>
         </Box>
@@ -107,7 +111,7 @@ const MessageList = ({
           alignItems="center" 
           height="100%"
         >
-          <Typography color="textSecondary">
+          <Typography sx={{ color: theme.colors.textSecondary }}>
             No messages yet. Start the conversation!
           </Typography>
         </Box>
@@ -126,8 +130,8 @@ const MessageList = ({
                     label={formatMessageDate(message.created)}
                     size="small"
                     sx={{
-                      backgroundColor: 'rgba(0,0,0,0.05)',
-                      color: 'text.secondary',
+                      backgroundColor: theme.colors.surface,
+                      color: theme.colors.textSecondary,
                       fontSize: '0.75rem',
                       fontWeight: 500,
                       border: 'none',
@@ -172,14 +176,20 @@ const MessageList = ({
                 elevation={0}
                 sx={{
                   p: 1.5,
-                  backgroundColor: '#f1f3f4',
+                  backgroundColor: theme.colors.surface,
                   borderRadius: '18px 18px 18px 4px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1,
                 }}
               >
-                <Typography variant="body2" color="textSecondary" sx={{ fontSize: '0.875rem' }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: '0.875rem',
+                    color: theme.colors.textSecondary
+                  }}
+                >
                   {typingUsers.map(user => user.username).join(', ')}
                   {typingUsers.length === 1 ? ' is' : ' are'} typing
                 </Typography>

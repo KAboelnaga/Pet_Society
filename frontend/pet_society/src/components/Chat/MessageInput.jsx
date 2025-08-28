@@ -20,6 +20,7 @@ import {
   PhotoCamera as PhotoIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
+import { useTheme } from '../../context/ThemeContext';
 
 const MessageInput = ({ onSendMessage, onSendImage, onTyping, disabled, compact = false }) => {
   const [message, setMessage] = useState('');
@@ -31,6 +32,7 @@ const MessageInput = ({ onSendMessage, onSendImage, onTyping, disabled, compact 
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     // Focus input when component mounts
@@ -145,7 +147,14 @@ const MessageInput = ({ onSendMessage, onSendImage, onTyping, disabled, compact 
 
   return (
     <>
-      <Paper elevation={0} sx={{ p: compact ? 1.5 : 2, bgcolor: 'transparent' }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: compact ? 1.5 : 2,
+          backgroundColor: theme.colors.background,
+          borderTop: `1px solid ${theme.colors.textSecondary}30`,
+        }}
+      >
         <Box sx={{ display: 'flex', gap: compact ? 0.5 : 1, alignItems: 'center' }}>
           <TextField
             ref={inputRef}
@@ -163,17 +172,24 @@ const MessageInput = ({ onSendMessage, onSendImage, onTyping, disabled, compact 
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: compact ? '20px' : '24px',
-                backgroundColor: '#f3f4f6',
+                backgroundColor: theme.colors.surface,
                 border: 'none',
+                color: theme.colors.text,
                 '&:hover': {
-                  backgroundColor: '#e5e7eb',
+                  backgroundColor: theme.colors.surface,
                 },
                 '&.Mui-focused': {
-                  backgroundColor: '#ffffff',
-                  boxShadow: '0 0 0 2px rgba(103, 126, 234, 0.2)',
+                  backgroundColor: theme.colors.surface,
+                  boxShadow: `0 0 0 2px ${theme.colors.primary}40`,
                 },
                 '& fieldset': {
                   border: 'none',
+                },
+                '& input': {
+                  color: theme.colors.text,
+                },
+                '& textarea': {
+                  color: theme.colors.text,
                 },
               },
               '& .MuiInputBase-input': {

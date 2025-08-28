@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import { authAPI } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { Camera, User, Mail, MapPin, FileText, ArrowLeft, Save, X } from "lucide-react";
@@ -7,6 +8,7 @@ import Navbar from "../Navbar";
 
 export default function UserProfileEdit() {
   const { user, updateUser } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -220,13 +222,17 @@ export default function UserProfileEdit() {
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
+      <div
+        className="min-h-screen py-8 px-4 transition-all duration-300"
+        style={{ backgroundColor: theme.colors.surface }}
+      >
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <button
               onClick={() => handleNavigation(`/profile/${user?.username}`)}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors mb-4"
+              className="flex items-center space-x-2 hover:opacity-80 transition-colors mb-4"
+              style={{ color: theme.colors.text }}
             >
               <ArrowLeft size={20} />
               <span>Back to Profile</span>
@@ -249,7 +255,13 @@ export default function UserProfileEdit() {
           </div>
 
           {/* Main Form Card */}
-          <div className="bg-white rounded-b-3xl shadow-2xl p-8">
+          <div
+            className="rounded-b-3xl shadow-2xl p-8 transition-all duration-300"
+            style={{
+              backgroundColor: theme.colors.background,
+              border: `1px solid ${theme.colors.textSecondary}30`,
+            }}
+          >
             {errors.general && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
                 {errors.general}
@@ -311,7 +323,10 @@ export default function UserProfileEdit() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Username */}
                 <div className="space-y-2">
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <label
+                    className="flex items-center space-x-2 text-sm font-medium"
+                    style={{ color: theme.colors.text }}
+                  >
                     <User size={16} />
                     <span>Username</span>
                   </label>
@@ -320,9 +335,12 @@ export default function UserProfileEdit() {
                     name="username"
                     value={formData.username}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                      errors.username ? "border-red-300 bg-red-50" : "border-gray-300"
-                    }`}
+                    className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    style={{
+                      backgroundColor: theme.colors.surface,
+                      borderColor: errors.username ? '#ef4444' : theme.colors.textSecondary + '50',
+                      color: theme.colors.text,
+                    }}
                     placeholder="Enter your username"
                   />
                   {errors.username && (
@@ -332,7 +350,10 @@ export default function UserProfileEdit() {
 
                 {/* Email (Read-only) */}
                 <div className="space-y-2">
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <label
+                    className="flex items-center space-x-2 text-sm font-medium"
+                    style={{ color: theme.colors.text }}
+                  >
                     <Mail size={16} />
                     <span>Email</span>
                   </label>
@@ -340,14 +361,22 @@ export default function UserProfileEdit() {
                     type="email"
                     value={user?.email || ""}
                     disabled
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500"
+                    className="w-full px-4 py-3 border rounded-xl"
+                    style={{
+                      backgroundColor: theme.colors.surface,
+                      borderColor: theme.colors.textSecondary + '50',
+                      color: theme.colors.textSecondary,
+                    }}
                     placeholder="Email cannot be changed"
                   />
                 </div>
 
                 {/* First Name */}
                 <div className="space-y-2">
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <label
+                    className="flex items-center space-x-2 text-sm font-medium"
+                    style={{ color: theme.colors.text }}
+                  >
                     <User size={16} />
                     <span>First Name</span>
                   </label>
@@ -356,9 +385,12 @@ export default function UserProfileEdit() {
                     name="first_name"
                     value={formData.first_name}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                      errors.first_name ? "border-red-300 bg-red-50" : "border-gray-300"
-                    }`}
+                    className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    style={{
+                      backgroundColor: theme.colors.surface,
+                      borderColor: errors.first_name ? '#ef4444' : theme.colors.textSecondary + '50',
+                      color: theme.colors.text,
+                    }}
                     placeholder="Enter your first name"
                   />
                   {errors.first_name && (
@@ -368,7 +400,10 @@ export default function UserProfileEdit() {
 
                 {/* Last Name */}
                 <div className="space-y-2">
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <label
+                    className="flex items-center space-x-2 text-sm font-medium"
+                    style={{ color: theme.colors.text }}
+                  >
                     <User size={16} />
                     <span>Last Name</span>
                   </label>
@@ -377,9 +412,12 @@ export default function UserProfileEdit() {
                     name="last_name"
                     value={formData.last_name}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                      errors.last_name ? "border-red-300 bg-red-50" : "border-gray-300"
-                    }`}
+                    className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    style={{
+                      backgroundColor: theme.colors.surface,
+                      borderColor: errors.last_name ? '#ef4444' : theme.colors.textSecondary + '50',
+                      color: theme.colors.text,
+                    }}
                     placeholder="Enter your last name"
                   />
                   {errors.last_name && (
@@ -389,7 +427,10 @@ export default function UserProfileEdit() {
 
                 {/* Location */}
                 <div className="space-y-2 md:col-span-2">
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <label
+                    className="flex items-center space-x-2 text-sm font-medium"
+                    style={{ color: theme.colors.text }}
+                  >
                     <MapPin size={16} />
                     <span>Location</span>
                   </label>
@@ -398,7 +439,12 @@ export default function UserProfileEdit() {
                     name="location"
                     value={formData.location}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    style={{
+                      backgroundColor: theme.colors.surface,
+                      borderColor: theme.colors.textSecondary + '50',
+                      color: theme.colors.text,
+                    }}
                     placeholder="Where are you located?"
                   />
                 </div>
@@ -406,10 +452,16 @@ export default function UserProfileEdit() {
 
               {/* Bio Section */}
               <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                <label
+                  className="flex items-center space-x-2 text-sm font-medium"
+                  style={{ color: theme.colors.text }}
+                >
                   <FileText size={16} />
                   <span>Bio</span>
-                  <span className="text-xs text-gray-400">
+                  <span
+                    className="text-xs"
+                    style={{ color: theme.colors.textSecondary }}
+                  >
                     ({formData.bio.length}/500)
                   </span>
                 </label>
@@ -419,9 +471,12 @@ export default function UserProfileEdit() {
                   onChange={handleChange}
                   rows={4}
                   maxLength={500}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none ${
-                    errors.bio ? "border-red-300 bg-red-50" : "border-gray-300"
-                  }`}
+                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  style={{
+                    backgroundColor: theme.colors.surface,
+                    borderColor: errors.bio ? '#ef4444' : theme.colors.textSecondary + '50',
+                    color: theme.colors.text,
+                  }}
                   placeholder="Tell us about yourself and your pets..."
                 />
                 {errors.bio && (
@@ -434,7 +489,12 @@ export default function UserProfileEdit() {
                 <button
                   type="button"
                   onClick={() => handleNavigation(`/profile/${user?.username}`)}
-                  className="flex items-center justify-center px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                  className="flex items-center justify-center px-6 py-3 border-2 rounded-xl font-semibold hover:opacity-80 transition-all duration-200"
+                  style={{
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.textSecondary + '50',
+                    color: theme.colors.text,
+                  }}
                 >
                   Cancel
                 </button>

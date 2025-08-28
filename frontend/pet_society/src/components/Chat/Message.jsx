@@ -12,9 +12,11 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { getAbsoluteImageUrl } from '../../config/api';
+import { useTheme } from '../../context/ThemeContext';
 
 const Message = ({ message, isOwnMessage, formatMessageTime }) => {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const { theme } = useTheme();
 
   const handleImageClick = () => {
     setImageDialogOpen(true);
@@ -83,7 +85,7 @@ const Message = ({ message, isOwnMessage, formatMessageTime }) => {
         sx={{
           wordBreak: 'break-word',
           whiteSpace: 'pre-wrap',
-          color: isOwnMessage ? 'white' : 'text.primary',
+          color: isOwnMessage ? 'white' : theme.colors.text,
         }}
       >
         {message.body}
@@ -121,7 +123,13 @@ const Message = ({ message, isOwnMessage, formatMessageTime }) => {
 
           <Box>
             {!isOwnMessage && (
-              <Typography variant="caption" color="textSecondary" sx={{ ml: 1 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  ml: 1,
+                  color: theme.colors.textSecondary
+                }}
+              >
                 {message.author?.first_name || message.author?.username}
               </Typography>
             )}
@@ -131,11 +139,11 @@ const Message = ({ message, isOwnMessage, formatMessageTime }) => {
               sx={{
                 p: message.message_type === 'image' ? 0.5 : 2,
                 backgroundColor: isOwnMessage
-                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                  : '#f3f4f6',
+                  ? theme.colors.primary
+                  : theme.colors.surface,
                 background: isOwnMessage
-                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                  : '#f3f4f6',
+                  ? theme.colors.primary
+                  : theme.colors.surface,
                 borderRadius: isOwnMessage
                   ? '18px 18px 6px 18px'
                   : '18px 18px 18px 6px',
@@ -149,7 +157,7 @@ const Message = ({ message, isOwnMessage, formatMessageTime }) => {
                 sx={{
                   display: 'block',
                   textAlign: 'right',
-                  color: isOwnMessage ? 'rgba(255,255,255,0.7)' : 'textSecondary',
+                  color: isOwnMessage ? 'rgba(255,255,255,0.7)' : theme.colors.textSecondary,
                   mt: message.message_type === 'image' ? 1 : 0.5,
                   px: message.message_type === 'image' ? 1 : 0,
                 }}

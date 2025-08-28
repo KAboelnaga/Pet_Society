@@ -7,6 +7,15 @@ body, html, #root {
   min-height: 100vh;
 }
 
+/* Remove underlines from all links */
+a {
+  text-decoration: none !important;
+}
+
+a:hover {
+  text-decoration: none !important;
+}
+
 .homepage-container {
   display: flex;
   max-width: 1200px;

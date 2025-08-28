@@ -71,32 +71,38 @@ const fetchUsers = async () => {
 // Toggle block status
 const handleToggleBlock = async (userId, currentBlockedStatus) => {
   try {
-    // استخدم authAPI لأنه فيه توكين
-    await authAPI.updateUser(userId, {
+    console.log("🔄 Updating block status for user:", userId, "to:", !currentBlockedStatus);
+    const response = await authAPI.updateUser(userId, {
       is_blocked: !currentBlockedStatus,
     });
 
+    console.log("✅ Block status update response:", response.data);
     showAlert(`User ${currentBlockedStatus ? 'unblocked' : 'blocked'} successfully`);
     fetchUsers(); // اعادة جلب اللستة بعد التعديل
   } catch (error) {
-    console.error("❌ Error blocking user:", error);
-    showAlert(error.response?.data?.error || 'Error updating user', 'danger');
+    console.error("❌ Error updating block status:", error);
+    console.error("❌ Error response:", error.response?.data);
+    console.error("❌ Error status:", error.response?.status);
+    showAlert(error.response?.data?.error || error.response?.data?.detail || 'Error updating user', 'danger');
   }
 };
 
 // Toggle admin status
 const handleToggleAdmin = async (userId, currentAdminStatus) => {
   try {
+    console.log("🔄 Updating admin status for user:", userId, "to:", !currentAdminStatus);
     const response = await authAPI.updateUser(userId, {
       is_admin: !currentAdminStatus,
     });
 
-
+    console.log("✅ Admin status update response:", response.data);
     showAlert(`User ${currentAdminStatus ? 'demoted' : 'promoted'} successfully`);
     fetchUsers();
   } catch (error) {
-    console.error("❌ Error updating admin status:", error.response?.data || error.message);
-    showAlert(error.response?.data?.error || 'Error updating user', 'danger');
+    console.error("❌ Error updating admin status:", error);
+    console.error("❌ Error response:", error.response?.data);
+    console.error("❌ Error status:", error.response?.status);
+    showAlert(error.response?.data?.error || error.response?.data?.detail || 'Error updating user', 'danger');
   }
 };
 

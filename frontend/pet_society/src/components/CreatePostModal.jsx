@@ -4,8 +4,10 @@ import {
   CheckIcon,
   ArrowUturnLeftIcon,
 } from "@heroicons/react/24/outline";
+import { API_CONFIG } from "../config/api";
+import { useTheme } from "../context/ThemeContext";
 
-const CreatePostModal = ({ isOpen, onClose }) => {
+const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -13,6 +15,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [postType, setPostType] = useState("services");
+  const { theme } = useTheme();
 
   const fileInputRef = useRef();
 
@@ -20,7 +23,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/categories/");
+        const res = await fetch(`${API_CONFIG.BASE_URL}/categories/`);
         const data = await res.json();
         setCategories(Array.isArray(data) ? data : data.results || []);
       } catch (err) {
@@ -75,7 +78,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
       formData.append("post_type", postType);
       if (image) formData.append("image", image);
 
-      const response = await fetch("http://localhost:8000/api/posts/create/", {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/posts/create/`, {
         method: "POST",
         headers: { Authorization: `Token ${token}` },
         body: formData,
@@ -84,7 +87,9 @@ const CreatePostModal = ({ isOpen, onClose }) => {
       if (response.ok) {
         alert("Post created successfully!");
         handleCancel();
-        window.location.reload();
+        if (onPostCreated) {
+          onPostCreated(); // Trigger refresh via callback
+        }
       } else {
         const err = await response.json();
         console.error(err);
@@ -101,17 +106,27 @@ const CreatePostModal = ({ isOpen, onClose }) => {
       onClick={handleCancel}
     >
       <div
-        className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg relative"
+        className="rounded-xl p-6 w-full max-w-md shadow-lg relative"
+        style={{
+          backgroundColor: theme.colors.background,
+          border: `1px solid ${theme.colors.textSecondary}30`,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={handleCancel}
-          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+          className="absolute top-3 right-3 hover:opacity-70 transition-opacity"
+          style={{ color: theme.colors.textSecondary }}
         >
           <XMarkIcon className="h-6 w-6" />
         </button>
 
-        <h2 className="text-xl font-semibold mb-4">Create a New Post</h2>
+        <h2
+          className="text-xl font-semibold mb-4"
+          style={{ color: theme.colors.text }}
+        >
+          Create a New Post
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Category Dropdown */}
@@ -120,6 +135,11 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             onChange={(e) => setCategoryId(e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.textSecondary + '50',
+              color: theme.colors.text,
+            }}
           >
             <option value="">Select Category</option>
             {categories.map((cat) => (
@@ -133,6 +153,11 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             onChange={(e) => setPostType(e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.textSecondary + '50',
+              color: theme.colors.text,
+            }}
           >
             <option value="">Select Post Type</option>
               <option  value="services">
@@ -154,6 +179,11 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             onChange={(e) => setTitle(e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.textSecondary + '50',
+              color: theme.colors.text,
+            }}
           />
 
           {/* Content */}
@@ -163,6 +193,11 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             onChange={(e) => setContent(e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2 h-32"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.textSecondary + '50',
+              color: theme.colors.text,
+            }}
           />
 
           {/* Large Image Preview */}

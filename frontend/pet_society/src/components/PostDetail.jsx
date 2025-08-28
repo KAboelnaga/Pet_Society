@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { HeartIcon, ChatBubbleLeftIcon, ArrowLeftIcon, TrashIcon, UserIcon } from '@heroicons/react/24/outline';
+import { HeartIcon, ChatBubbleLeftIcon, ArrowLeftIcon, TrashIcon, UserIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
+import EditPostModal from './EditPostModal';
+import Navbar from './Navbar';
 import { getAbsoluteImageUrl } from '../config/api';
 import '../App.css';
 
@@ -11,9 +14,9 @@ const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  
+  const { theme } = useTheme();
 
-  
+
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +27,10 @@ const PostDetail = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Check if current user is the post owner
+  const isOwner = user && post && (user.username === post.author || user.username === post.username);
 
   useEffect(() => {
     // Test API connection first
@@ -232,18 +239,39 @@ const PostDetail = () => {
 
   const canDeleteComment = (comment) => {
     if (!isAuthenticated || !user) return false;
-    
+
     // Comment author can delete their own comment
     if (comment.author.id === user.id) return true;
-    
+
     // Post author can delete any comment on their post
     if (post && post.author === user.id) return true;
-    
+
     return false;
+  };
+
+  const handleDeletePost = async () => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+
+    try {
+      const response = await api.delete(`posts/${post.id}/`);
+      if (response.status === 204 || response.status === 200) {
+        alert("Post deleted successfully!");
+        navigate('/'); // Navigate back to home page
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      alert(error.response?.data?.detail || "Error deleting post");
+    }
+  };
+
+  const handlePostUpdated = () => {
+    // Refresh the post data after edit
+    fetchPost();
   };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'long',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -257,18 +285,158 @@ const PostDetail = () => {
   if (!post) return <div className="error">Post not found</div>;
 
   return (
-    <div className="post-detail-container">
-      {/* Back button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="back-button"
+    <>
+      <div style={{ position: 'relative', zIndex: 1000 }}>
+        <Navbar />
+      </div>
+
+      <style>
+        {`
+          nav {
+            position: relative !important;
+            z-index: 1000 !important;
+            display: block !important;
+            visibility: visible !important;
+          }
+          body {
+            background: ${theme.colors.background} !important;
+            background-image: none !important;
+          }
+          html {
+            background: ${theme.colors.background} !important;
+          }
+          #root {
+            background: ${theme.colors.background} !important;
+          }
+          .post-detail-container {
+            background: ${theme.colors.background} !important;
+            background-image: none !important;
+            background-attachment: initial !important;
+            position: relative;
+            z-index: 1;
+            margin-top: 0 !important;
+            padding-top: 20px;
+          }
+          .post-detail-container::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: ${theme.colors.background} !important;
+            z-index: -10;
+          }
+          .post-detail {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+          }
+          .comments-section {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+          }
+          .comments-section h3 {
+            color: ${theme.colors.text} !important;
+          }
+          .comment {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+          }
+          .comment-main {
+            background: ${theme.colors.surface} !important;
+          }
+          .comment-body {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+          }
+          .comment-content p {
+            color: ${theme.colors.text} !important;
+          }
+          .reply {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+          }
+          .reply-main {
+            background: ${theme.colors.surface} !important;
+          }
+          .reply .comment-body {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+          }
+          .reply .comment-content p {
+            color: ${theme.colors.text} !important;
+          }
+          .comment-form-container {
+            background: ${theme.colors.surface} !important;
+          }
+          .reply-form {
+            background: ${theme.colors.surface} !important;
+          }
+          .no-comments {
+            color: ${theme.colors.textSecondary} !important;
+          }
+          .comment-author {
+            color: ${theme.colors.text} !important;
+          }
+          .comment-date {
+            color: ${theme.colors.textSecondary} !important;
+          }
+          .replies {
+            background: ${theme.colors.background} !important;
+            border-left-color: ${theme.colors.primary}40 !important;
+          }
+          .comment-input {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+            border-color: ${theme.colors.textSecondary}50 !important;
+          }
+          .comment-input:focus {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+            border-color: ${theme.colors.primary} !important;
+          }
+          .reply-input {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+            border-color: ${theme.colors.textSecondary}50 !important;
+          }
+          .reply-input:focus {
+            background: ${theme.colors.surface} !important;
+            color: ${theme.colors.text} !important;
+            border-color: ${theme.colors.primary} !important;
+          }
+        `}
+      </style>
+      <div
+        className="post-detail-container"
+        style={{
+          backgroundColor: theme.colors.background,
+          minHeight: '100vh',
+          color: theme.colors.text,
+          backgroundImage: 'none',
+        }}
       >
-        <ArrowLeftIcon className="w-5 h-5" />
-        Back
-      </button>
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="back-button"
+          style={{
+            backgroundColor: theme.colors.background,
+            color: theme.colors.text,
+            border: `1px solid ${theme.colors.textSecondary}50`,
+          }}
+        >
+          <ArrowLeftIcon className="w-5 h-5" />
+          Back
+        </button>
 
       {/* Post content */}
-      <div className="post-detail">
+      <div
+        className="post-detail"
+        style={{
+          border: `1px solid ${theme.colors.textSecondary}30`,
+        }}
+      >
         <div className="post-header">
           <div className="post-author-info">
             <div
@@ -294,16 +462,34 @@ const PostDetail = () => {
               >
                 {post.username || post.author}
               </div>
-              <div className="post-timestamp">{formatDate(post.created_at)}</div>
+              <div
+                className="post-timestamp"
+                style={{
+                  color: '#ffffff'
+                }}
+              >
+                {formatDate(post.created_at)}
+              </div>
             </div>
           </div>
-          <div className="post-category-badge">
+          <div
+            className="post-category-badge"
+            style={{
+              backgroundColor: theme.colors.primary,
+              color: 'white'
+            }}
+          >
             {post.category_name || 'Uncategorized'}
           </div>
         </div>
 
         <div className="post-title-section">
-          <h1 className="post-title">{post.title}</h1>
+          <h1
+            className="post-title"
+            style={{ color: theme.colors.text }}
+          >
+            {post.title}
+          </h1>
         </div>
 
         {post.image && (
@@ -313,7 +499,7 @@ const PostDetail = () => {
         )}
 
         <div className="post-content">
-          <p>{post.content}</p>
+          <p style={{ color: theme.colors.text }}>{post.content}</p>
         </div>
 
         {/* Post actions */}
@@ -335,12 +521,39 @@ const PostDetail = () => {
             <ChatBubbleLeftIcon className="w-6 h-6 text-gray-500" />
             <span>{post.comments_count || 0} comments</span>
           </div>
+
+          {/* Owner Actions */}
+          {isOwner && (
+            <div className="flex gap-3 ml-auto">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
+                title="Edit Post"
+              >
+                <PencilSquareIcon className="w-5 h-5" />
+                <span className="text-sm">Edit</span>
+              </button>
+              <button
+                onClick={handleDeletePost}
+                className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors"
+                title="Delete Post"
+              >
+                <TrashIcon className="w-5 h-5" />
+                <span className="text-sm">Delete</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Comments section */}
-      <div className="comments-section">
-        <h3>Comments</h3>
+      <div
+        className="comments-section"
+        style={{
+          border: `1px solid ${theme.colors.textSecondary}30`,
+        }}
+      >
+        <h3 style={{ color: theme.colors.text }}>Comments</h3>
         
         {/* Add comment form */}
         {isAuthenticated && !replyTo && (
@@ -365,6 +578,11 @@ const PostDetail = () => {
                 placeholder="Write a comment..."
                 className="comment-input"
                 rows="3"
+                style={{
+                  backgroundColor: theme.colors.surface,
+                  color: theme.colors.text,
+                  borderColor: theme.colors.textSecondary + '50',
+                }}
               />
               <button
                 type="submit"
@@ -395,7 +613,12 @@ const PostDetail = () => {
         {/* Comments list */}
         <div className="comments-list">
           {(!comments || comments.length === 0) ? (
-            <p className="no-comments">No comments yet. Be the first to comment!</p>
+            <p
+              className="no-comments"
+              style={{ color: theme.colors.textSecondary }}
+            >
+              No comments yet. Be the first to comment!
+            </p>
           ) : (
             (Array.isArray(comments) ? comments : []).map(comment => (
               <div key={comment.id} className="comment">
@@ -422,10 +645,16 @@ const PostDetail = () => {
                         <span
                           className="comment-author clickable-name"
                           onClick={() => navigate(`/profile/${comment.author.username}`)}
+                          style={{ color: theme.colors.text }}
                         >
                           {comment.author.username}
                         </span>
-                        <span className="comment-date">{formatDate(comment.created_at)}</span>
+                        <span
+                          className="comment-date"
+                          style={{ color: theme.colors.textSecondary }}
+                        >
+                          {formatDate(comment.created_at)}
+                        </span>
                       </div>
                       <div className="comment-header-right">
                         {/* Delete button for comments */}
@@ -441,7 +670,7 @@ const PostDetail = () => {
                       </div>
                     </div>
                     <div className="comment-content">
-                      <p>{comment.content}</p>
+                      <p style={{ color: theme.colors.text }}>{comment.content}</p>
                     </div>
 
                     {/* Reply button */}
@@ -469,6 +698,11 @@ const PostDetail = () => {
                       placeholder="Write a reply..."
                       className="reply-input"
                       rows="2"
+                      style={{
+                        backgroundColor: theme.colors.surface,
+                        color: theme.colors.text,
+                        borderColor: theme.colors.textSecondary + '50',
+                      }}
                     />
                     <div className="reply-actions">
                       <button 
@@ -519,10 +753,16 @@ const PostDetail = () => {
                                 <span
                                   className="comment-author clickable-name"
                                   onClick={() => navigate(`/profile/${reply.author.username}`)}
+                                  style={{ color: theme.colors.text }}
                                 >
                                   {reply.author.username}
                                 </span>
-                                <span className="comment-date">{formatDate(reply.created_at)}</span>
+                                <span
+                                  className="comment-date"
+                                  style={{ color: theme.colors.textSecondary }}
+                                >
+                                  {formatDate(reply.created_at)}
+                                </span>
                               </div>
                               <div className="comment-header-right">
                                 {/* Delete button for replies */}
@@ -538,7 +778,7 @@ const PostDetail = () => {
                               </div>
                             </div>
                             <div className="comment-content">
-                              <p>{reply.content}</p>
+                              <p style={{ color: theme.colors.text }}>{reply.content}</p>
                             </div>
                           </div>
                         </div>
@@ -576,7 +816,16 @@ const PostDetail = () => {
           </div>
         </div>
       )}
+
+      {/* Edit Post Modal */}
+      <EditPostModal
+        isOpen={isEditing}
+        post={post}
+        onClose={() => setIsEditing(false)}
+        onPostUpdated={handlePostUpdated}
+      />
     </div>
+    </>
   );
 };
 

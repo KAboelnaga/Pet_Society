@@ -6,11 +6,13 @@ import { authAPI, postsAPI } from "../../services/api";
 import UserPostCard from "./UserPostCard";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../contexts/ChatContext";
+import { useTheme } from "../../context/ThemeContext";
 
 export function UserProfile() {
   const { username } = useParams();
   const { user: currentUser } = useAuth();
   const { startPrivateChat, openChat } = useChat();
+  const { theme } = useTheme();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
@@ -25,33 +27,55 @@ export function UserProfile() {
     const fetchUser = async () => {
       try {
         setLoading(true);
+
         console.log("🔍 Token in localStorage:", localStorage.getItem('token'));
         console.log("🔍 Current user:", currentUser);
+        console.log("🔍 Current user authenticated:", !!currentUser);
+        console.log("🔍 Fetching profile for username:", username);
+
         const response = await authAPI.getUserProfile(username);
         console.log("🔍 User profile response:", response.data);
         console.log("🔍 is_following value:", response.data.is_following);
         console.log("🔍 typeof is_following:", typeof response.data.is_following);
         console.log("🔍 All response keys:", Object.keys(response.data));
+
         setUser(response.data);
 
-        // Force boolean conversion and log the result
-        const followingStatus = Boolean(response.data.is_following);
+        // Handle different possible field names for follow status
+        const followingStatus = Boolean(
+          response.data.is_following ||
+          response.data.isFollowing ||
+          response.data.following ||
+          false
+        );
+        console.log("🔍 Raw is_following from API:", response.data.is_following);
         console.log("🔍 Converted following status:", followingStatus);
+        console.log("🔍 Setting isFollowing to:", followingStatus);
 
-        // TEMPORARY TEST: Force a follow state to test button rendering
-        // setIsFollowing(true); // Uncomment this line to test "Unfollow" button
         setIsFollowing(followingStatus);
         setFollowersCount(response.data.followers_count || 0);
+
+        console.log("🔍 State updated - isFollowing:", followingStatus);
+
+        // Double check the state after setting
+        setTimeout(() => {
+          console.log("🔍 State check after timeout - isFollowing:", isFollowing);
+        }, 100);
       } catch (e) {
         console.error("Error fetching user profile:", e);
         setUser(null);
+        // Reset states on error
+        setIsFollowing(false);
+        setFollowersCount(0);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
-  }, [username]);
+    if (username) {
+      fetchUser();
+    }
+  }, [username, currentUser]);
 
   useEffect(() => {
     const fetchUserPosts = async () => {
@@ -91,10 +115,20 @@ export function UserProfile() {
       console.log("🔍 Following user:", username);
       const response = await authAPI.followUser(username);
       console.log("🔍 Follow response:", response.data);
+
+      // Immediately update state
       setIsFollowing(true);
-      setFollowersCount(response.data.followers_count);
+      setFollowersCount(prev => prev + 1);
+
+      // Update from response if available
+      if (response.data.followers_count !== undefined) {
+        setFollowersCount(response.data.followers_count);
+      }
     } catch (error) {
       console.error("Error following user:", error);
+      // Revert state on error
+      setIsFollowing(false);
+      setFollowersCount(prev => Math.max(0, prev - 1));
     } finally {
       setFollowLoading(false);
     }
@@ -108,10 +142,20 @@ export function UserProfile() {
       console.log("🔍 Unfollowing user:", username);
       const response = await authAPI.unfollowUser(username);
       console.log("🔍 Unfollow response:", response.data);
+
+      // Immediately update state
       setIsFollowing(false);
-      setFollowersCount(response.data.followers_count);
+      setFollowersCount(prev => Math.max(0, prev - 1));
+
+      // Update from response if available
+      if (response.data.followers_count !== undefined) {
+        setFollowersCount(response.data.followers_count);
+      }
     } catch (error) {
       console.error("Error unfollowing user:", error);
+      // Revert state on error
+      setIsFollowing(true);
+      setFollowersCount(prev => prev + 1);
     } finally {
       setFollowLoading(false);
     }
@@ -128,6 +172,8 @@ export function UserProfile() {
       alert('Failed to start chat. Please try again.');
     }
   };
+
+
 
   // fallback if no user
   const fallbackUser = {
@@ -162,23 +208,34 @@ export function UserProfile() {
 
   // Debug logging for follow state
   console.log("🔍 Profile render - isFollowing:", isFollowing, "for user:", username);
+  console.log("🔍 Profile render - currentUser:", currentUser?.username);
+  console.log("🔍 Profile render - followLoading:", followLoading);
 
   return (
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
+      <div
+        className="min-h-screen py-8 px-4 transition-all duration-300"
+        style={{ backgroundColor: theme.colors.surface }}
+      >
         <div className="max-w-4xl mx-auto">
           {/* Cover Photo Section */}
           <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 h-48 rounded-t-3xl overflow-hidden">
             <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-            <div className="absolute bottom-4 left-6 text-white">
+            <div className="absolute bottom-4 right-6 text-white text-right">
               <h1 className="text-2xl font-bold">Welcome to {profile.name || profile.username}'s Profile</h1>
             </div>
           </div>
 
           {/* Main Profile Card */}
-          <div className="bg-white rounded-b-3xl shadow-2xl relative">
+          <div
+            className="rounded-b-3xl shadow-2xl relative transition-all duration-300"
+            style={{
+              backgroundColor: theme.colors.background,
+              border: `1px solid ${theme.colors.textSecondary}30`,
+            }}
+          >
             {/* Profile Picture */}
             <div className="absolute -top-16 left-6">
               {profile.image ? (
@@ -198,29 +255,44 @@ export function UserProfile() {
               {/* Profile Header */}
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex-1">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                  <h2
+                    className="text-3xl font-bold mb-2"
+                    style={{ color: theme.colors.text }}
+                  >
                     {profile.name || profile.username}
                   </h2>
 
                   {profile.bio && (
-                    <p className="text-gray-600 text-lg leading-relaxed mb-4 max-w-2xl">
+                    <p
+                      className="text-lg leading-relaxed mb-4 max-w-2xl"
+                      style={{ color: theme.colors.textSecondary }}
+                    >
                       {profile.bio}
                     </p>
                   )}
 
                   {/* Profile Stats */}
                   <div className="flex flex-wrap gap-6 mb-6">
-                    <div className="flex items-center space-x-2 text-gray-700">
+                    <div
+                      className="flex items-center space-x-2"
+                      style={{ color: theme.colors.text }}
+                    >
                       <Heart className="w-5 h-5 text-red-500" />
                       <span className="font-semibold">{profile.posts_count || 0}</span>
                       <span className="text-sm">Posts</span>
                     </div>
-                    <div className="flex items-center space-x-2 text-gray-700">
+                    <div
+                      className="flex items-center space-x-2"
+                      style={{ color: theme.colors.text }}
+                    >
                       <Users className="w-5 h-5 text-blue-500" />
                       <span className="font-semibold">{followersCount}</span>
                       <span className="text-sm">Followers</span>
                     </div>
-                    <div className="flex items-center space-x-2 text-gray-700">
+                    <div
+                      className="flex items-center space-x-2"
+                      style={{ color: theme.colors.text }}
+                    >
                       <Users className="w-5 h-5 text-green-500" />
                       <span className="font-semibold">{profile.following_count || 0}</span>
                       <span className="text-sm">Following</span>
@@ -262,7 +334,12 @@ export function UserProfile() {
 
                     <button
                       onClick={handleStartChat}
-                      className="flex items-center justify-center border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                      className="flex items-center justify-center px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                      style={{
+                        backgroundColor: theme.colors.background,
+                        color: theme.colors.text,
+                        border: theme.isDark ? 'none' : `2px solid ${theme.colors.textSecondary}50`,
+                      }}
                     >
                       <MessageCircle size={18} className="mr-2" />
                       Message
@@ -270,44 +347,83 @@ export function UserProfile() {
                     </>
                   )}
 
-                 
+
                 </div>
               </div>
 
               {/* Contact Information */}
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {profile.email && (
-                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
+                  <div
+                    className="flex items-center space-x-3 p-4 rounded-xl"
+                    style={{ backgroundColor: theme.colors.surface }}
+                  >
                     <div className="p-2 bg-blue-100 rounded-lg">
                       <Mail className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Email</p>
-                      <p className="font-medium text-gray-900">{profile.email}</p>
+                      <p
+                        className="text-sm"
+                        style={{ color: theme.colors.textSecondary }}
+                      >
+                        Email
+                      </p>
+                      <p
+                        className="font-medium"
+                        style={{ color: theme.colors.text }}
+                      >
+                        {profile.email}
+                      </p>
                     </div>
                   </div>
                 )}
 
                 {profile.location && (
-                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
+                  <div
+                    className="flex items-center space-x-3 p-4 rounded-xl"
+                    style={{ backgroundColor: theme.colors.surface }}
+                  >
                     <div className="p-2 bg-green-100 rounded-lg">
                       <MapPin className="w-5 h-5 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Location</p>
-                      <p className="font-medium text-gray-900">{profile.location}</p>
+                      <p
+                        className="text-sm"
+                        style={{ color: theme.colors.textSecondary }}
+                      >
+                        Location
+                      </p>
+                      <p
+                        className="font-medium"
+                        style={{ color: theme.colors.text }}
+                      >
+                        {profile.location}
+                      </p>
                     </div>
                   </div>
                 )}
 
                 {profile.joined && (
-                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
+                  <div
+                    className="flex items-center space-x-3 p-4 rounded-xl"
+                    style={{ backgroundColor: theme.colors.surface }}
+                  >
                     <div className="p-2 bg-purple-100 rounded-lg">
                       <Calendar className="w-5 h-5 text-purple-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Joined</p>
-                      <p className="font-medium text-gray-900">{profile.joined}</p>
+                      <p
+                        className="text-sm"
+                        style={{ color: theme.colors.textSecondary }}
+                      >
+                        Joined
+                      </p>
+                      <p
+                        className="font-medium"
+                        style={{ color: theme.colors.text }}
+                      >
+                        {profile.joined}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -316,13 +432,25 @@ export function UserProfile() {
           </div>
 
           {/* Posts Section */}
-          <div className="mt-8 bg-white rounded-3xl shadow-xl p-6">
+          <div
+            className="mt-8 rounded-3xl shadow-xl p-6 transition-all duration-300"
+            style={{
+              backgroundColor: theme.colors.background,
+              border: `1px solid ${theme.colors.textSecondary}30`,
+            }}
+          >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3
+                className="text-2xl font-bold"
+                style={{ color: theme.colors.text }}
+              >
                 Posts ({profile.posts_count || 0})
               </h3>
               {posts.length > 0 && (
-                <div className="text-sm text-gray-500">
+                <div
+                  className="text-sm"
+                  style={{ color: theme.colors.textSecondary }}
+                >
                   Showing latest posts
                 </div>
               )}

@@ -9,7 +9,7 @@ import {
   Avatar,
   Badge,
   Collapse,
-  useTheme,
+  useTheme as useMuiTheme,
   useMediaQuery,
 } from '@mui/material';
 import {
@@ -22,6 +22,7 @@ import MessageInput from './MessageInput';
 import webSocketService from '../../services/websocket';
 import { chatAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }) => {
   const [messages, setMessages] = useState([]);
@@ -34,8 +35,9 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
   const [currentPage, setCurrentPage] = useState(1);
   
   const { user } = useAuth();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { theme: appTheme } = useTheme();
+  const muiTheme = useMuiTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
@@ -349,7 +351,9 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
         borderRadius: '16px',
         overflow: 'hidden',
         transition: 'all 0.3s ease',
-        border: '1px solid rgba(0,0,0,0.08)',
+        backgroundColor: appTheme.colors.background,
+        color: appTheme.colors.text,
+        border: `1px solid ${appTheme.colors.textSecondary}30`,
         boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
       }}
     >
@@ -358,7 +362,7 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
         position="static"
         elevation={0}
         sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundColor: appTheme.colors.primary,
           cursor: 'pointer',
           borderRadius: '16px 16px 0 0',
         }}
@@ -442,15 +446,22 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
 
       {/* Chat Content */}
       <Collapse in={!isMinimized}>
-        <Box sx={{ height: 464, display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
+        <Box
+          sx={{
+            height: 464,
+            display: 'flex',
+            flexDirection: 'column',
+            bgcolor: appTheme.colors.surface
+          }}
+        >
           {/* Messages */}
           <Box 
             ref={messagesContainerRef}
             onScroll={handleScroll}
-            sx={{ 
-              flex: 1, 
-              overflow: 'auto', 
-              bgcolor: '#ffffff',
+            sx={{
+              flex: 1,
+              overflow: 'auto',
+              bgcolor: appTheme.colors.background,
               // Custom scrollbar styling
               '&::-webkit-scrollbar': {
                 width: '6px',
@@ -481,8 +492,8 @@ const ChatWindow = ({ conversation, isMinimized, position, onClose, onMinimize }
 
           {/* Message Input */}
           <Box sx={{
-            borderTop: '1px solid #e5e7eb',
-            bgcolor: '#ffffff',
+            borderTop: `1px solid ${appTheme.colors.textSecondary}30`,
+            bgcolor: appTheme.colors.background,
             borderRadius: '0 0 16px 16px'
           }}>
             <MessageInput

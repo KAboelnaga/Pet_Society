@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { useTheme } from '../context/ThemeContext';
 import '../App.css';
 
 /**
@@ -10,6 +11,7 @@ import '../App.css';
 const Sidebar = ({ selectedCategory, setSelectedCategory, setCurrentPage }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
 
   useEffect(() => {
     api.get('categories/')
@@ -39,11 +41,21 @@ const Sidebar = ({ selectedCategory, setSelectedCategory, setCurrentPage }) => {
   }
 
   return (
-    <div className="sidebar">
-      <h2>Categories</h2>
+    <div
+      className="sidebar"
+      style={{
+        backgroundColor: theme.colors.background,
+        borderColor: theme.colors.textSecondary + '30',
+      }}
+    >
+      <h2 style={{ color: theme.colors.text }}>Categories</h2>
       <ul className="category-list">
         <li
           className={!selectedCategory ? 'active' : ''}
+          style={{
+            color: theme.colors.text,
+            backgroundColor: !selectedCategory ? theme.colors.primary : 'transparent',
+          }}
           onClick={() => {
             setSelectedCategory(null);
             setCurrentPage?.(1); // reset page to 1
@@ -55,6 +67,10 @@ const Sidebar = ({ selectedCategory, setSelectedCategory, setCurrentPage }) => {
           <li
             key={cat.id}
             className={selectedCategory === cat.id ? 'active' : ''}
+            style={{
+              color: theme.colors.text,
+              backgroundColor: selectedCategory === cat.id ? theme.colors.primary : 'transparent',
+            }}
             onClick={() => {
               setSelectedCategory(cat.id);
               setCurrentPage?.(1); // reset page to 1

@@ -86,10 +86,18 @@ class UserSerializer(serializers.ModelSerializer):
         print(f"🔍 Serializer - request: {request}")
         if request and hasattr(request, 'user'):
             print(f"🔍 Serializer - request.user: {request.user}")
+            print(f"🔍 Serializer - target user (obj): {obj}")
             print(f"🔍 Serializer - is_authenticated: {request.user.is_authenticated}")
             if request.user.is_authenticated:
-                is_following = obj.followers.filter(id=request.user.id).exists()
-                print(f"🔍 Serializer - is_following: {is_following}")
+                # Check if the current user (request.user) is following the target user (obj)
+                # This means: does a Follow object exist where follower=request.user and followed=obj
+                from followers.models import Follow
+                is_following = Follow.objects.filter(
+                    follower=request.user,
+                    followed=obj
+                ).exists()
+                print(f"🔍 Serializer - Follow query: follower={request.user}, followed={obj}")
+                print(f"🔍 Serializer - is_following result: {is_following}")
                 return is_following
         print(f"🔍 Serializer - returning False (no auth)")
         return False

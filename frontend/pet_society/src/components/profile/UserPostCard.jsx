@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Heart, MessageCircle, Edit, Trash2, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import api from "../../services/api";
 
 function UserPostCard({ post, currentUser, onDelete }) {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { theme } = useTheme();
 
   // Likes state
   const [isLiked, setIsLiked] = useState(false);
@@ -70,15 +72,22 @@ function UserPostCard({ post, currentUser, onDelete }) {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
+      weekday: 'long',
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
   return (
     <div
-      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer group"
+      className="rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer group"
+      style={{
+        backgroundColor: theme.colors.background,
+        border: `1px solid ${theme.colors.textSecondary}30`,
+      }}
       onClick={handlePostClick}
     >
       {/* Post Image */}
@@ -123,12 +132,18 @@ function UserPostCard({ post, currentUser, onDelete }) {
       {/* Post Content */}
       <div className="p-4">
         {/* Title */}
-        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+        <h3
+          className="text-lg font-bold mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors"
+          style={{ color: theme.colors.text }}
+        >
           {post.title}
         </h3>
 
         {/* Content Preview */}
-        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+        <p
+          className="text-sm mb-4 line-clamp-3"
+          style={{ color: theme.colors.textSecondary }}
+        >
           {post.content.length > 120
             ? post.content.slice(0, 120) + "..."
             : post.content}

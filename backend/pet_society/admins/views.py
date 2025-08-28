@@ -63,27 +63,47 @@ class UserUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
     
     def update(self, request, *args, **kwargs):
-        kwargs['partial'] = True 
+        kwargs['partial'] = True
 
         user = self.get_object()
         current_user = request.user
-        
+
         # Check if trying to modify another admin
         if user.is_admin and not current_user.is_superuser and user != current_user:
             return Response(
                 {'error': 'Only superuser can modify other admins'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
-        # Check if trying to delete another admin
+
+        # Check if trying to demote another admin
         if 'is_admin' in request.data and not request.data['is_admin']:
             if user.is_admin and not current_user.is_superuser and user != current_user:
                 return Response(
                     {'error': 'Only superuser can demote other admins'},
                     status=status.HTTP_403_FORBIDDEN
                 )
-        
-        return super().update(request, *args, **kwargs)
+
+        # Handle admin promotion/demotion
+        if 'is_admin' in request.data:
+            if request.data['is_admin']:
+                # Promoting to admin - also set is_staff
+                user.is_admin = True
+                user.is_staff = True
+            else:
+                # Demoting from admin - remove is_staff unless superuser
+                user.is_admin = False
+                if not user.is_superuser:
+                    user.is_staff = False
+
+        # Handle blocking/unblocking
+        if 'is_blocked' in request.data:
+            user.is_blocked = request.data['is_blocked']
+
+        user.save()
+
+        # Return updated user data
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
 
 
 
@@ -92,18 +112,25 @@ class UserUpdateView(generics.UpdateAPIView):
 class PostListView(generics.ListAPIView):
     serializer_class = PostListSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
-    
+
     def get_queryset(self):
-        queryset = Post.objects.all()
+        queryset = Post.objects.select_related('author', 'category').all()
         search = self.request.query_params.get('search', None)
+        ordering = self.request.query_params.get('ordering', '-created_at')
+
         if search:
             queryset = queryset.filter(
                 Q(title__icontains=search)
             )
+
+        # Apply ordering
+        if ordering:
+            queryset = queryset.order_by(ordering)
+
         return queryset
 
 class PostDetailView(generics.RetrieveAPIView):
-    queryset = Post.objects.all()
+    queryset = Post.objects.select_related('author', 'category').all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
 

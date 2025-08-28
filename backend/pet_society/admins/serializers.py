@@ -31,28 +31,31 @@ class UserSerializer(serializers.ModelSerializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['is_blocked', 'is_admin']
+        fields = ['is_blocked', 'is_admin', 'is_staff']
 
 class PostSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = UserSerializer(source='author', read_only=True)
     category = CategorySerializer(read_only=True)
-    
+    likes_count = serializers.ReadOnlyField()
+    comments_count = serializers.ReadOnlyField()
+
     class Meta:
         model = Post
         fields = [
-            'id', 'user', 'category', 'title', 'content', 
-            'post_type', 'price', 'image', 'location', 'contact_info',
-            'is_active', 'created_at', 'updated_at'
+            'id', 'user', 'category', 'title', 'content',
+            'post_type', 'image', 'created_at', 'likes_count', 'comments_count'
         ]
-        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'created_at', 'likes_count', 'comments_count']
 
 class PostListSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
+    user = serializers.StringRelatedField(source='author')
     category = serializers.StringRelatedField()
-    
+    likes_count = serializers.ReadOnlyField()
+    comments_count = serializers.ReadOnlyField()
+
     class Meta:
         model = Post
         fields = [
-            'id', 'user', 'category', 'title', 'post_type', 
-            'price', 'location', 'is_active', 'created_at'
-        ] 
+            'id', 'user', 'category', 'title', 'content', 'post_type', 'image',
+            'created_at', 'likes_count', 'comments_count'
+        ]

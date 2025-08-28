@@ -21,17 +21,33 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       const token = getAuthToken();
-      if (token) {
+      const savedUser = localStorage.getItem('user');
+
+      if (token && savedUser) {
         try {
-          const response = await authAPI.getProfile();
-          setUser(response.data);
-          console.log("User profile fetched:", response.data);
-          localStorage.setItem('user', JSON.stringify(response.data)); 
+          // Set token in axios headers first
+          setAuthToken(token);
+          // Parse saved user data
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
           setIsAuthenticated(true);
+
+          // Optionally verify token is still valid by fetching fresh profile
+          // But don't fail if this request fails - use cached user data
+          try {
+            const response = await authAPI.getProfile();
+            setUser(response.data);
+            localStorage.setItem('user', JSON.stringify(response.data));
+          } catch (profileError) {
+            console.warn('Profile refresh failed, using cached user data:', profileError);
+            // Keep using cached user data, don't logout
+          }
         } catch (error) {
-          console.error('Auth check failed:', error);
+          console.error('Auth initialization failed:', error);
+          // Only clear auth if we can't parse saved data
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          setAuthToken(null);
         }
       }
       setLoading(false);
