@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { BsMoon, BsSun } from 'react-icons/bs';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -18,7 +20,19 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   
   const { register } = useAuth();
+  const { mode, toggleTheme, theme } = useTheme();
   const navigate = useNavigate();
+
+  // Helper function for input styling
+  const getInputStyle = (hasError = false) => ({
+    backgroundColor: theme.colors.background,
+    color: theme.colors.text,
+    borderColor: hasError ? '#ef4444' : theme.colors.textSecondary + '50',
+  });
+
+  const getLabelStyle = () => ({
+    color: theme.colors.text,
+  });
 
   const handleChange = (e) => {
     setFormData({
@@ -51,17 +65,47 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div
+      className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative"
+      style={{ backgroundColor: theme.colors.surface }}
+    >
+      {/* Theme Toggle Button */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 p-3 rounded-full transition-all duration-200 hover:scale-110"
+        style={{
+          backgroundColor: theme.colors.background,
+          color: theme.colors.text,
+          border: `1px solid ${theme.colors.textSecondary}30`,
+        }}
+        title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
+      >
+        {mode === 'light' ? <BsMoon size={20} /> : <BsSun size={20} />}
+      </button>
+
+      <div
+        className="max-w-md w-full space-y-8 p-8 rounded-2xl shadow-2xl"
+        style={{
+          backgroundColor: theme.mode === 'dark' ? '#1a1a1a' : theme.colors.background,
+          border: `1px solid ${theme.colors.textSecondary}20`,
+        }}
+      >
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2
+            className="mt-6 text-center text-3xl font-extrabold"
+            style={{ color: theme.colors.text }}
+          >
             Join Pet Society
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p
+            className="mt-2 text-center text-sm"
+            style={{ color: theme.colors.textSecondary }}
+          >
             Already have an account?{' '}
             <Link
               to="/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
+              className="font-medium hover:underline"
+              style={{ color: theme.colors.primary }}
             >
               Sign in
             </Link>
@@ -72,7 +116,11 @@ const Register = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="first_name"
+                  className="block text-sm font-medium"
+                  style={getLabelStyle()}
+                >
                   First Name
                 </label>
                 <input
@@ -80,9 +128,8 @@ const Register = () => {
                   name="first_name"
                   type="text"
                   required
-                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.first_name ? 'border-red-300' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none sm:text-sm"
+                  style={getInputStyle(!!errors.first_name)}
                   placeholder="First Name"
                   value={formData.first_name}
                   onChange={handleChange}
@@ -93,7 +140,11 @@ const Register = () => {
               </div>
               
               <div>
-                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="last_name"
+                  className="block text-sm font-medium"
+                  style={getLabelStyle()}
+                >
                   Last Name
                 </label>
                 <input
@@ -101,9 +152,8 @@ const Register = () => {
                   name="last_name"
                   type="text"
                   required
-                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.last_name ? 'border-red-300' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none sm:text-sm"
+                  style={getInputStyle(!!errors.last_name)}
                   placeholder="Last Name"
                   value={formData.last_name}
                   onChange={handleChange}
@@ -115,7 +165,11 @@ const Register = () => {
             </div>
             
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium"
+                style={getLabelStyle()}
+              >
                 Username
               </label>
               <input
@@ -123,9 +177,8 @@ const Register = () => {
                 name="username"
                 type="text"
                 required
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  errors.username ? 'border-red-300' : 'border-gray-300'
-                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none sm:text-sm"
+                style={getInputStyle(!!errors.username)}
                 placeholder="Username"
                 value={formData.username}
                 onChange={handleChange}
@@ -136,7 +189,11 @@ const Register = () => {
             </div>
             
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium"
+                style={getLabelStyle()}
+              >
                 Email
               </label>
               <input
@@ -144,9 +201,8 @@ const Register = () => {
                 name="email"
                 type="email"
                 required
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
-                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none sm:text-sm"
+                style={getInputStyle(!!errors.email)}
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleChange}
@@ -157,7 +213,11 @@ const Register = () => {
             </div>
             
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium"
+                style={getLabelStyle()}
+              >
                 Password
               </label>
               <input
@@ -165,9 +225,8 @@ const Register = () => {
                 name="password"
                 type="password"
                 required
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  errors.password ? 'border-red-300' : 'border-gray-300'
-                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none sm:text-sm"
+                style={getInputStyle(!!errors.password)}
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
@@ -178,7 +237,11 @@ const Register = () => {
             </div>
             
             <div>
-              <label htmlFor="password_confirm" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password_confirm"
+                className="block text-sm font-medium"
+                style={getLabelStyle()}
+              >
                 Confirm Password
               </label>
               <input
@@ -186,9 +249,8 @@ const Register = () => {
                 name="password_confirm"
                 type="password"
                 required
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  errors.password_confirm ? 'border-red-300' : 'border-gray-300'
-                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none sm:text-sm"
+                style={getInputStyle(!!errors.password_confirm)}
                 placeholder="Confirm Password"
                 value={formData.password_confirm}
                 onChange={handleChange}
@@ -199,14 +261,19 @@ const Register = () => {
             </div>
             
             <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="location"
+                className="block text-sm font-medium"
+                style={getLabelStyle()}
+              >
                 Location (Optional)
               </label>
               <input
                 id="location"
                 name="location"
                 type="text"
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none sm:text-sm"
+                style={getInputStyle()}
                 placeholder="Your location"
                 value={formData.location}
                 onChange={handleChange}
@@ -214,14 +281,19 @@ const Register = () => {
             </div>
             
             <div>
-              <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="bio"
+                className="block text-sm font-medium"
+                style={getLabelStyle()}
+              >
                 Bio (Optional)
               </label>
               <textarea
                 id="bio"
                 name="bio"
                 rows="3"
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none sm:text-sm"
+                style={getInputStyle()}
                 placeholder="Tell us about yourself..."
                 value={formData.bio}
                 onChange={handleChange}
@@ -230,8 +302,14 @@ const Register = () => {
           </div>
 
           {errors.non_field_errors && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-800">
+            <div
+              className="rounded-md p-4"
+              style={{ backgroundColor: theme.mode === 'dark' ? '#7f1d1d' : '#fef2f2' }}
+            >
+              <div
+                className="text-sm"
+                style={{ color: theme.mode === 'dark' ? '#fca5a5' : '#dc2626' }}
+              >
                 {errors.non_field_errors[0]}
               </div>
             </div>
@@ -241,11 +319,12 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                loading
-                  ? 'bg-indigo-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
-              }`}
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white transition-all duration-200 hover:scale-105"
+              style={{
+                background: loading ? theme.colors.textSecondary : theme.gradients.primary,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+              }}
             >
               {loading ? 'Creating account...' : 'Create account'}
             </button>
