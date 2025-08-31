@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-+w@we&^dwf0oc*uz$fs4jlfsx5_po=e08a1gvh!om!=x=-#02*
 ENCRYPTION_KEY = '6aYeOKM2f-YYbtwCoSGf2lddSzoCJ6aKVxg3OgtyI8A='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
 
@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'channels',  # For WebSocket support
-    
+    "django_extensions",
     # Chat application (core feature)
     'chats',
     
@@ -70,6 +70,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 ROOT_URLCONF = 'pet_society.urls'
@@ -145,7 +146,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATIC_ROOT = BASE_DIR / "staticfiles"
 # Media files (user uploaded content)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
