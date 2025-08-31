@@ -27,11 +27,11 @@ SECRET_KEY = 'django-insecure-+w@we&^dwf0oc*uz$fs4jlfsx5_po=e08a1gvh!om!=x=-#02*
 ENCRYPTION_KEY = '6aYeOKM2f-YYbtwCoSGf2lddSzoCJ6aKVxg3OgtyI8A='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
-
+WSGI_APPLICATION = 'pet_society.wsgi.application'
 # Application definition
 
 INSTALLED_APPS = [
