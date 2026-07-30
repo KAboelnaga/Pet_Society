@@ -24,7 +24,7 @@ A full-stack social platform for pet owners — share posts, follow other owners
 | Frontend | React, React Router |
 | Database | PostgreSQL |
 | Styling | Tailwind CSS |
-| Deployment | Vercel (frontend) |
+| Deployment | Vercel (frontend) | Railway (backend)
 
 ## Project structure
 
@@ -61,7 +61,6 @@ The API runs on `http://localhost:8000`.
 |---|---|
 | `SECRET_KEY` | Django secret key |
 | `DEBUG` | `True` for local development |
-| `DATABASE_URL` | PostgreSQL connection string |
 | `ALLOWED_HOSTS` | Comma-separated hostnames |
 
 <!-- VERIFY: match these to the actual names used in settings.py, and commit a .env.example
