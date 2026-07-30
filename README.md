@@ -3,11 +3,8 @@
 A full-stack social platform for pet owners — share posts, follow other owners, comment, like, and message.
 
 **Live demo:** https://pet-society-silk.vercel.app
+![Pet Society feed](docs/pet-society-homepage.png)
 
-<!-- VERIFY: add a screenshot or short GIF here. This is the single highest-value line in the file.
-     Drop an image into a /docs folder in the repo and reference it:
-     ![Pet Society feed](docs/screenshot-feed.png)
--->
 
 ---
 
