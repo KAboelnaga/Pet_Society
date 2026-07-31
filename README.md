@@ -43,7 +43,7 @@ A full-stack social platform for pet owners — share posts, follow other owners
 ### Backend
 
 ```bash
-cd backend
+cd backend/pet_society
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -64,13 +64,12 @@ The API runs on `http://localhost:8000`.
 | `DEBUG` | `True` for local development |
 | `ALLOWED_HOSTS` | Comma-separated hostnames |
 
-<!-- VERIFY: match these to the actual names used in settings.py, and commit a .env.example
-     file (with empty values) so anyone cloning the repo knows what to set. -->
+
 
 ### Frontend
 
 ```bash
-cd frontend
+cd frontend/pet_society
 npm install
 npm run dev
 ```
