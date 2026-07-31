@@ -5,7 +5,10 @@ A full-stack social platform for pet owners — share posts, follow other owners
 **Live demo:** https://pet-society-silk.vercel.app
 ![Pet Society feed](docs/pet-society-homepage.png)
 ![Pet Society feed](docs/pet-society-homepage-light-chat.png)
+![Pet Society dashboard](docs/pet-society-admin-dashboard.png)
 
+
+**See more screenshots in docs/ folder if you are interested**
 
 ---
 
