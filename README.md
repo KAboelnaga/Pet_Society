@@ -79,12 +79,3 @@ The client runs on `http://localhost:5173` and expects the API at `http://localh
 ## About this project
 
 Built as a team project during the ITI Full Stack Python track, across roughly 76 commits.
-
-**My contribution:** <!-- VERIFY AND EDIT — be specific and accurate. For example:
-"the React frontend, the posts and comments API, and the follow/unfollow social graph."
-Name only what you actually wrote. A precise, modest contribution note is far more
-credible in an interview than a vague claim over the whole project. -->
-
-## License
-
-MIT
